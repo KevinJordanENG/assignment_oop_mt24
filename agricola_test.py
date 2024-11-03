@@ -6,3 +6,5 @@ from agricola import Game
 
 # Instantiate an instance of the agricola game.
 game1 = Game(num_players=2)
+
+print()

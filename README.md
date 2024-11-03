@@ -27,3 +27,7 @@ This file contains listed and described features of the implementation such as a
     - Inherently limited & player supplies such as people, stables, fences, plus the 'starting player' token are initialized for each player with the maximum defined in pg. 2 of the rule book.
     - Wood-room/field and clay/stone room tiles are also limited as specified but not initialized to any one player.
 - Gameboard coordinates are represented in row major [row][col] 2D array format.
+- As actions and cards contain lots of data/instructions/options, they are cached/loaded in/from CSV files.
+    - The assumption is that tests are ran from the directory containing the `agricola` pkg as relative file paths are used to load the CSV files.
+    - This works when running from the same place as the included `agricola_test.py` script.
+    - Optional `data_dir_path` argument in `Game` constructor can be used to specify path if needed.

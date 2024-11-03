@@ -1,9 +1,8 @@
 """
 Module containing Player class for controlling agricola game players.
 """
-
 from typing import Any, Self
-from .goods import Supply
+from .goods.goods import Supply
 
 
 class Player:
@@ -23,7 +22,7 @@ class Player:
         self = super().__new__(cls)
         self.__player_id = player_id
         self.__starting_player = starting
-        self.__supply = Supply(2 if starting else 3)
+        self.__supply = Supply(num_food=2 if starting else 3)
         return self
 
     @property
@@ -39,4 +38,5 @@ class Player:
     @property
     def supply(self) -> Supply:
         """Returns view of player's current supply."""
+        # FIXME! Need to make sure ACTUALLY returns read only.
         return self.__supply
