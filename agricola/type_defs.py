@@ -37,7 +37,8 @@ SpaceType = Literal[
     "field",
     "action",
     "pasture",
-    "unused"
+    "unused",
+    "blocked"
 ]
 """Type alias for various gameboard space usage types."""
 

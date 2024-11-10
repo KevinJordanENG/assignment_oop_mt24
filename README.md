@@ -28,6 +28,6 @@ This file contains listed and described features of the implementation such as a
     - Wood-room/field and clay/stone room tiles are also limited as specified but not initialized to any one player.
 - Gameboard coordinates are represented in row major [row][col] 2D array format.
 - As actions and cards contain lots of data/instructions/options, they are cached/loaded in/from CSV files.
-    - The assumption is that tests are ran from the directory containing the `agricola` pkg as relative file paths are used to load the CSV files.
-    - This works when running from the same place as the included `agricola_test.py` script.
-    - Optional `data_dir_path` argument in `Game` constructor can be used to specify path if needed.
+    - Default is to use the current working directory of where the `Game` class is instantiated to build appropriate filepaths (portable, os agnostic) using the pkg module tree.
+        - This assumes that the `Game` class is instantiated in the same directory that contains the `agricola` pkg and its related file tree.
+    - Optional `data_dir_path` argument in `Game` constructor can be used to specify path to CSV files (directory only, without the filenames as they are appended to this path) if needed.
