@@ -6,7 +6,7 @@ Uses BaseBoard ABC to handle unified board logic.
 from typing import TypedDict, cast
 
 from .board import BaseBoard, SpaceData
-from ..type_defs import Coordinate, SpaceType
+from ..type_defs import Coordinate, SpaceType, GoodsType, Location
 
 class PerimeterData(TypedDict):
     """Lightweight way of keeping data on current perimeter usage."""
@@ -43,6 +43,22 @@ class Farmyard(BaseBoard):
         """Property returning read only view of current board perimeter spaces and their data."""
 # FIXME! Need to make sure read only
         return self._board_perimeters
+
+    def move(
+            self,
+            item: GoodsType,
+            num_goods: int,
+            new_board: Location,
+            new_coords: Coordinate,
+            prev_board: Location,
+            prev_coord: Coordinate
+        ) -> None:
+        """Farmyard specific move implementation."""
+# TODO: Please build!
+
+    def change_space_type(self, coord: Coordinate, space_type: SpaceType) -> None:
+        """Changes space type if request is valid/allowed."""
+# TODO: Error checking for valid space change reqs.
 
     def _init_board_spaces(self) -> None:
         """Sets the valid spaces for a farmyard."""
@@ -95,7 +111,3 @@ class Farmyard(BaseBoard):
                 "action": None
             }
             self._board[j] = space
-
-    def change_space_type(self, coord: Coordinate, space_type: SpaceType) -> None:
-        """Changes space type if request is valid/allowed."""
-# TODO: Error checking for valid space change reqs.

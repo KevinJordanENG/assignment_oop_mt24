@@ -37,6 +37,22 @@ class BaseBoard(metaclass=ABCMeta):
         self._valid_spaces = set()
         self._board = {}
 
+    @abstractmethod
+    def move(self,
+            item: GoodsType,
+            num_goods: int,
+            new_board: Location,
+            new_coords: Coordinate,
+            prev_board: Location,
+            prev_coord: Coordinate
+        ) -> None:
+        """
+        Unified move routine handling board and coordinate changes.
+        
+        Abstract as the logic of how to use the previous & new coordinates should be implemented
+        differently for farmyard vs action spaces but provides uniform method signature.
+        """
+
     @property
     def board_type(self) -> Location:
         """Property to check type of current board."""
@@ -94,3 +110,7 @@ class BaseBoard(metaclass=ABCMeta):
         self._board[new_coords]["occupied"] = True
         if prev_coord is not None:
             self._board[prev_coord]["occupied"] = False
+
+    def _change_space_data(self, new_space_data: SpaceData) -> None:
+        """Changes/updates space info from player move action."""
+        self._board[new_space_data["coordinate"]] = new_space_data

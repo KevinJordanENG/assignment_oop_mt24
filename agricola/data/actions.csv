@@ -1,8 +1,8 @@
 key,stage,coord,accum,goods_type,num_good,func,costs,output
-"farm_expansion",0,"(0,1)",False,None,0,"BUILD_ROOMS_AND_OR_STABLES","{'wood': ((5,'wood'),(2,'reed')), 'clay': ((5,'clay'),(2,'reed')), 'stone': ((5,'stone'),(2,'reed')), 'stable': (2,'wood')}","{'wood': 'wood_room', 'clay': 'clay_room', 'stone': 'stone_room', 'stable': 'stable'}"
+"farm_expansion",0,"(0,1)",False,None,0,"BUILD_ROOMS_AND_OR_STABLES","{'wood': ((5,'wood'),(2,'reed')), 'clay': ((5,'clay'),(2,'reed')), 'stone': ((5,'stone'),(2,'reed')), 'stable': (2,'wood')}","{'wood': 'wood_room', 'clay': 'clay_room', 'stone': 'stone_room', 'stable': (1,'stable')}"
 "meeting_place",0,"(1,1)",False,None,0,"TAKE_START_PLAYER_TOKEN+PLAY_MINOR_IMPR",None,None
 "grain_seeds",0,"(2,1)",False,"grain",1,"GET_GOODS",None,None
-"farmland",0,"(3,1)",False,None,0,"PLACE_FIELD_TILE",None,"field"
+"farmland",0,"(3,1)",False,None,0,"PLOW",None,"field"
 "lessons",0,"(4,1)",False,None,0,"PLAY_OCCUP","{'first': (0,'food'), 'second': (1,'food')}",None
 "day_laborer",0,"(5,1)",False,"food",2,"GET_GOODS",None,None
 "forest",0,"(1,2)",True,"wood",3,"GET_GOODS",None,None
@@ -10,19 +10,19 @@ key,stage,coord,accum,goods_type,num_good,func,costs,output
 "reed_bank",0,"(3,2)",True,"reed",1,"GET_GOODS",None,None
 "fishing",0,"(4,2)",True,"food",1,"GET_GOODS",None,None
 "major_improvement",1,"(-1,-1)",False,None,0,"PLAY_MINOR_IMPR||PLAY_MAJOR_IMPR",None,None
-"fencing",1,"(-1,-1)",False,None,0,"BUILD_FENCES","wood","fence"
-"grain_utilization",1,"(-1,-1)",False,None,0,"SOW||BAKE_BREAD","{'sow': {'grain', 'vegetable'}, 'bake_bread': (1,'grain')}","{'sow': None, 'bake_bread': 'food'}"
-"sheep_market",1,"(-1,-1)",True,"sheep",1,"GET_ANIMAL",None,"{'sheep', 'food'}"
-"basic_wish_for_children",2,"(-1,-1)",False,None,0,"HAVE_KIDS+PLAY_MINOR_IMPR",None,"person"
+"fencing",1,"(-1,-1)",False,None,0,"BUILD_FENCES","(1,'wood')","(1,'fence')"
+"grain_utilization",1,"(-1,-1)",False,None,0,"SOW||BAKE_BREAD","{'sow': {(1,'grain'), (1,'vegetable')}, 'bake_bread': (1,'grain')}","{'sow': None, 'bake_bread': (1,'food')}"
+"sheep_market",1,"(-1,-1)",True,"sheep",1,"GET_ANIMAL",None,"{(1,'sheep'), (1,'food')}"
+"basic_wish_for_children",2,"(-1,-1)",False,None,0,"HAVE_KIDS+PLAY_MINOR_IMPR",None,"(1,'person')"
 "house_redevelopment",2,"(-1,-1)",False,None,0,"RENOVATION+PLAY_MAJOR_IMPR||PLAY_MINOR_IMPR","{'clay': ((1,'reed'),(1,'clay')), 'stone': ((1,'reed'),(1,'stone'))}","{'clay': 'clay_room', 'stone': 'stone_room'}"
 "western_quarry",2,"(-1,-1)",True,"stone",1,"GET_GOODS",None,None
 "vegetable_seeds",3,"(-1,-1)",False,"vegetable",1,"GET_GOODS",None,None
-"pig_market",3,"(-1,-1)",True,"boar",1,"GET_ANIMAL",None,"{'boar', 'food'}"
-"cattle_market",4,"(-1,-1)",True,"cattle",1,"GET_ANIMAL",None,"{'cattle', 'food'}"
+"pig_market",3,"(-1,-1)",True,"boar",1,"GET_ANIMAL",None,"{(1,'boar'), (1,'food')}"
+"cattle_market",4,"(-1,-1)",True,"cattle",1,"GET_ANIMAL",None,"{(1,'cattle'), (1,'food')}"
 "eastern_quarry",4,"(-1,-1)",True,"stone",1,"GET_GOODS",None,None
-"urgent_wish_for_children",5,"(-1,-1)",False,None,0,"HAVE_KIDS",None,"person"
-"cultivation",5,"(-1,-1)",False,None,0,"PLACE_FIELD_TILE+SOW","{'plow': None, 'sow': {'grain', 'vegetable'}}","{'plow': 'field', 'sow': None}"
-"farm_redevelopment",6,"(0,8)",False,None,0,"RENOVATION+BUILD_FENCES","{'clay': ((1,'reed'),(1,'clay')), 'stone': ((1,'reed'),(1,'stone')), 'wood': 1}","{'clay': 'clay_room', 'stone': 'stone_room', 'wood': 'fence'}"
+"urgent_wish_for_children",5,"(-1,-1)",False,None,0,"HAVE_KIDS",None,"(1,'person')"
+"cultivation",5,"(-1,-1)",False,None,0,"PLOW+SOW","{'plow': None, 'sow': {(1,'grain'), (1,'vegetable')}}","{'plow': 'field', 'sow': None}"
+"farm_redevelopment",6,"(0,8)",False,None,0,"RENOVATION+BUILD_FENCES","{'clay': ((1,'reed'),(1,'clay')), 'stone': ((1,'reed'),(1,'stone')), 'wood': (1,'wood')}","{'clay': 'clay_room', 'stone': 'stone_room', 'wood': (1,'fence')}"
 "copse",0,"(0,0)",True,"wood",1,"GET_GOODS",None,None
 "grove",0,"(1,0)",True,"wood",2,"GET_GOODS",None,None
 "3_resource_market",0,"(2,0)",False,None,0,"GET_MARKET_GOODS",None,"{'reed': ((1,'reed'),(1,'food')), 'stone': ((1,'stone'),(1,'food'))}"

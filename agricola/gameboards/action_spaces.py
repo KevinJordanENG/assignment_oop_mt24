@@ -10,14 +10,16 @@ import ast
 import random
 from typing import Any, Final, cast, get_args
 from .board import BaseBoard, SpaceData
-from ..type_defs import Coordinate, Action, GoodsType, SpaceType
+from ..type_defs import Coordinate, Action, GoodsType, SpaceType, Location
 
 ActionCSVLine = tuple[Action, dict[str, Any]]
 """
 Type Alias used locally in action spaces frequently representing one line of loaded CSV.
 Each CSV line contains all data of a specific action space.
-Uses Any purposefully as values loaded represent functional data.
+Uses 'Any' purposefully as values loaded represent functional data.
 Examples are coordinate tuples, integer values of goods quantity, etc.
+Decision was made to immediately evaluate these read in CSV str into their proper datatype
+instead of waiting for their needed use to evaluate them, except reserved names and functions.
 """
 
 START_COORDS: Final[dict[str, set[Coordinate]]] = {
@@ -47,7 +49,7 @@ Sets Not Final coords meant to be consumed as rounds advance and actions are pla
 FuncNoEval = set([
     "BUILD_ROOMS_AND_OR_STABLES",
     "TAKE_START_PLAYER_TOKEN+PLAY_MINOR_IMPR",
-    "PLACE_FIELD_TILE",
+    "PLOW",
     "PLAY_OCCUP",
     "GET_GOODS",
     "PLAY_MINOR_IMPR||PLAY_MAJOR_IMPR",
@@ -57,7 +59,7 @@ FuncNoEval = set([
     "HAVE_KIDS+PLAY_MINOR_IMPR",
     "RENOVATION+PLAY_MAJOR_IMPR||PLAY_MINOR_IMPR",
     "HAVE_KIDS",
-    "PLACE_FIELD_TILE+SOW",
+    "PLOW+SOW",
     "RENOVATION+BUILD_FENCES",
     "GET_MARKET_GOODS"
 ])
@@ -85,6 +87,18 @@ class ActionSpaces(BaseBoard):
         self._init_board_spaces(num_players)
         # Populate initial spaces.
         self._populate_spaces(path)
+
+    def move(
+            self,
+            item: GoodsType,
+            num_goods: int,
+            new_board: Location,
+            new_coords: Coordinate,
+            prev_board: Location,
+            prev_coord: Coordinate
+        ) -> None:
+        """Action space specific move implementation."""
+# TODO: Please build!
 
     def _init_board_spaces(self, num_players: int) -> None:
         """Initializes specific action spaces board based on number of players."""

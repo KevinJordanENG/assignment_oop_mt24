@@ -1,0 +1,11 @@
+key,build_cost,func,func_cost,func_output,points,goods_req
+"2_fireplace","(2,'clay')","COOK||BAKE_BREAD","{'veg': (1,'vegetable'), 'sheep': (1,'sheep'), 'boar': (1,'boar'), 'cow': (1,'cattle'), 'bake_bread': (1,'grain')}","{'veg': (2,'food'), 'sheep': (2,'food'), 'boar': (2,'food'), 'cow': (3,'food'), 'bake_bread': (2,'food')}",1,None
+"3_fireplace","(3,'clay')","COOK||BAKE_BREAD","{'veg': (1,'vegetable'), 'sheep': (1,'sheep'), 'boar': (1,'boar'), 'cow': (1,'cattle'), 'bake_bread': (1,'grain')}","{'veg': (2,'food'), 'sheep': (2,'food'), 'boar': (2,'food'), 'cow': (3,'food'), 'bake_bread': (2,'food')}",1,None
+"4_cooking_hearth","{'rtrn': 'RETURN_FPLACE', 'clay': (4,'clay')}","COOK||BAKE_BREAD","{'veg': (1,'vegetable'), 'sheep': (1,'sheep'), 'boar': (1,'boar'), 'cow': (1,'cattle'), 'bake_bread': (1,'grain')}","{'veg': (3,'food'), 'sheep': (2,'food'), 'boar': (3,'food'), 'cow': (4,'food'), 'bake_bread': (3,'food')}",1,None
+"5_cooking_hearth","{'rtrn': 'RETURN_FPLACE', 'clay': (5,'clay')}","COOK||BAKE_BREAD","{'veg': (1,'vegetable'), 'sheep': (1,'sheep'), 'boar': (1,'boar'), 'cow': (1,'cattle'), 'bake_bread': (1,'grain')}","{'veg': (3,'food'), 'sheep': (2,'food'), 'boar': (3,'food'), 'cow': (4,'food'), 'bake_bread': (3,'food')}",1,None
+"well","((1,'wood'),(3,'stone'))","GET_1_FOOD_NXT_X_RNDS",None,"(1,'food')",4,None
+"clay_oven","((3,'clay'),(1,'stone'))","BAKE_BREAD","(1,'grain')","(5,'food')",2,None
+"stone_oven","((1,'clay'),(3,'stone'))","BAKE_BREAD","(1,'grain')","(4,'food')",3,None
+"joinery","((2,'wood'),(2,'stone'))","JOIN_POT_BASKET","(1,'wood')","(2,'food')","{'base': 2, 'bonus': (1,2,3)}","('wood',(3,5,7))"
+"pottery","((2,'clay'),(2,'stone'))","JOIN_POT_BASKET","(1,'clay')","(2,'food')","{'base': 2, 'bonus': (1,2,3)}","('clay',(3,5,7))"
+"basketmakers_workshop","((2,'reed'),(2,'stone'))","JOIN_POT_BASKET","(1,'reed')","(3,'food')","{'base': 2, 'bonus': (1,2,3)}","('reed',(2,4,5))"

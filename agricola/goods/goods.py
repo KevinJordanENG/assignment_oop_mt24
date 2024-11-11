@@ -92,8 +92,8 @@ class Supply:
         """Unified move routine handling board and coordinate changes."""
         # Fetch item matching type and optionally previous coords/board if provided.
         fetch = self.get_good(item, prev_board, prev_coord)
-        self._change_board(fetch, new_board)
-        self._change_coord(fetch, new_coords)
+        self._change_good_board(fetch, new_board)
+        self._change_good_coord(fetch, new_coords)
 
     def _init_limited_goods(self) -> list[Good]:
         """Initializes inventory of limited goods."""
@@ -141,10 +141,10 @@ class Supply:
                 break
         return good
 
-    def _change_coord(self, item: Good, new_coords: Coordinate) -> None:
+    def _change_good_coord(self, item: Good, new_coords: Coordinate) -> None:
         """Moves good to new gameboard coordinate or into inventory coord = (-1, -1)."""
         item["coordinate"] = new_coords
 
-    def _change_board(self, item: Good, new_board: Location) -> None:
+    def _change_good_board(self, item: Good, new_board: Location) -> None:
         """Changes gameboard of good."""
         item["location"] = new_board
