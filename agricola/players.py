@@ -2,7 +2,7 @@
 Module containing Player class for controlling agricola game players.
 """
 from __future__ import annotations
-from typing import Any, Self, TYPE_CHECKING
+from typing import Self, TYPE_CHECKING
 
 from .goods import Supply
 from .gameboards import Farmyard
@@ -23,21 +23,34 @@ class Player:
     __supply: Supply
     __farmyard: Farmyard
     __player_major_imp_cards: Deck | None
-# FIXME!!! Need to replace all `Any` once implemented!
-    __minor_imp_cards: Any
-    __occupation_cards: Any
+    __minor_imp_cards: Deck
+    __occupation_cards: Deck
     __begging_markers: int
 
-    def __new__(cls, game: Game, player_id: int, starting: bool = False) -> Self:
+    def __new__(
+            cls,
+            game: Game,
+            minor_imp_cards: Deck,
+            occup_cards: Deck,
+            num_players: int,
+            *,
+            player_id: int,
+            starting: bool = False
+        ) -> Self:
         self = super().__new__(cls)
         self.__game = game
         self.__player_id = player_id
         self.__starting_player = starting
         self.__begging_markers = 0
-        self.__supply = Supply(num_food=2 if starting else 3)
+        if num_players == 1:
+            self.__supply = Supply(num_food=0)
+        else:
+            self.__supply = Supply(num_food=2 if starting else 3)
         self.__farmyard = Farmyard()
         self._init_persons()
         self.__player_major_imp_cards = None
+        self.__minor_imp_cards = minor_imp_cards
+        self.__occupation_cards = occup_cards
         return self
 
     @property
@@ -77,6 +90,24 @@ class Player:
         """Returns player's major improvement cards if any, else None."""
 # FIXME! Need to make sure ACTUALLY returns read only.
         return self.__player_major_imp_cards
+
+    @property
+    def minor_improvements(self) -> Deck:
+        """Returns player's minor improvement cards."""
+# FIXME! Need to make sure ACTUALLY returns read only.
+        return self.__minor_imp_cards
+
+    @property
+    def occupations(self) -> Deck:
+        """Returns player's occupations cards."""
+# FIXME! Need to make sure ACTUALLY returns read only.
+        return self.__occupation_cards
+
+    def discard_goods(self) -> None:
+        """"""
+
+    def grains_or_veg_to_food(self) -> None:
+        """"""
 
     def move_items(
             self,

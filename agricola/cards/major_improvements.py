@@ -27,3 +27,5 @@ class MajorImprovement(Card):
     def func(self) -> str:
         """Returns str version of function call associated with card."""
         return self._func
+
+# TODO: joinery, pottery, basket only can action on harvest rounds

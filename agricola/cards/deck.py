@@ -4,9 +4,11 @@ Deck module is a composition of major & minor improvements plus occupations.
 Allows for bulk operations on cards such as init.
 """
 
+from __future__ import annotations
 import os
 import csv
 import ast
+import random
 from typing import Any, Self, cast, get_args
 
 from .major_improvements import MajorImprovement
@@ -120,11 +122,14 @@ class Deck:
     __deck_type: str
     __cards: dict[CardDictKeys, MajorImprovement|MinorImprovement|Occupation]
 
-    def __new__(cls, deck_type: str, *, path: str, num_players: int = 2) -> Self:
+    def __new__(cls, deck_type: str, *, path: str | None, num_players: int = 2) -> Self:
         """Constructor for decks."""
         self = super().__new__(cls)
         self.__deck_type = deck_type
-        self._load_csv(path, num_players)
+        if path is not None:
+            self._load_csv(path, num_players)
+        else:
+            self.__cards = {}
         return self
 
     @property
@@ -137,6 +142,37 @@ class Deck:
         """Property to return read only view of cards in this deck object."""
 # FIXME! Need to make sure read only
         return self.__cards
+
+    def get_seven_rand_cards(self) -> Deck:
+        """
+        Returns a deck of 7 random cards for player init.
+        
+        Also removes these cards from global/game scope so no 2 players can get the same card.
+        """
+        # Only applies to occupations & minor improvements so check for this.
+        if self.__deck_type == "major":
+            raise ValueError("Getting 7 cards is for occupations & minor improvements only.")
+        # Create a new (empty) deck to return.
+        seven_cards = Deck(self.deck_type, path=None)
+        # Get 7 random cards.
+        rand_keys: list[CardDictKeys] = random.sample(list(self.__cards.keys()), 7)
+        # Add them to new deck & remove from main deck.
+        for key in rand_keys:
+            seven_cards.add_card_to_deck(key, self.__cards[key])
+            self.__cards.pop(key)
+        return seven_cards
+
+    def get_next_action_space(self) -> None:
+        """"""
+
+    def add_card_to_deck(
+            self,
+            key: CardDictKeys,
+            card: MajorImprovement|MinorImprovement|Occupation
+        ) -> None:
+        """Adds card to deck from attributes & names."""
+        self.__cards[key] = card
+
 
     def _load_major(self, path: str) -> None:
         """Loads deck with all major improvement cards."""

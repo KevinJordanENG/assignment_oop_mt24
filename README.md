@@ -31,3 +31,4 @@ This file contains listed and described features of the implementation such as a
     - Default is to use the current working directory of where the `Game` class is instantiated to build appropriate filepaths (portable, os agnostic) using the pkg module tree.
         - This assumes that the `Game` class is instantiated in the same directory that contains the `agricola` pkg and its related file tree.
     - Optional `data_dir_path` argument in `Game` constructor can be used to specify path to CSV files (directory only, without the filenames as they are appended to this path) if needed.
+- It was difficult to confirm if 2 food per person is consumed at the end of *each* round or exclusively on *harvest* rounds. It seemed most well described in the harvest sections so food consumption was only implemented at the end of harvest rounds.

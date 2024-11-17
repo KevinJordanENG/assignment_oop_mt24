@@ -60,6 +60,9 @@ class Farmyard(BaseBoard):
         """Changes space type if request is valid/allowed."""
 # TODO: Error checking for valid space change reqs.
 
+    def _check_adjacency(self) -> None:
+        """"""
+
     def _init_board_spaces(self) -> None:
         """Sets the valid spaces for a farmyard."""
         self._valid_spaces = set([(0,0), (0,1), (0,2), (0,3), (0,4),

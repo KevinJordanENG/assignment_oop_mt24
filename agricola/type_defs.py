@@ -196,3 +196,11 @@ OccupationNames = Literal[
     "cattle_feeder"
 ]
 """Type alias for occupations card names, also keys to load properties from CSV."""
+
+RoundSteps = Literal[
+    "preparation",
+    "work",
+    "returning_home",
+    "harvest"
+]
+"""Type alias for the 4 steps/phases within a round."""

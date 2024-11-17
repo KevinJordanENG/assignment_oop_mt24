@@ -44,6 +44,7 @@ STAGE_COORDS: dict[int, set[Coordinate]] = {
 Dict containing numbered sets of initial coordinates available per stage as defined in rulebook.
 Sets Not Final coords meant to be consumed as rounds advance and actions are place on gameboard.
 """
+# FIXME! Need to turn these into lists or something ordered as coords have order, but cards don't.
 
 # TODO: change these to real functions once they exist
 FuncNoEval = set([
@@ -51,7 +52,7 @@ FuncNoEval = set([
     "TAKE_START_PLAYER_TOKEN+PLAY_MINOR_IMPR",
     "PLOW",
     "PLAY_OCCUP",
-    "GET_GOODS",
+    "GET_GOODS",    # TODO: -----------------------> Only 2 wood is accum on forest for 1 p game
     "PLAY_MINOR_IMPR||PLAY_MAJOR_IMPR",
     "BUILD_FENCES",
     "SOW||BAKE_BREAD",
@@ -133,6 +134,7 @@ class ActionSpaces(BaseBoard):
 
     def _select_rand_round_action(self, stage: int) -> ActionCSVLine:
         """Randomly selects from remaining stage action spaces for the stage."""
+# FIXME! The coords actually have order, the cards must not, add to decks the rand selection.
         sub_set = []
         for item in self.__csv_data.items():
             if (item[1]["stage"] == stage) and (item[1]["coord"] == (-1,-1)):
@@ -186,4 +188,3 @@ class ActionSpaces(BaseBoard):
                         self.__csv_data[action][k] = v
                     else:
                         self.__csv_data[action][k] = ast.literal_eval(v)
-# TODO: need to make sure final CSV has no trailing comma otherwise adds extra empty k/v, plus check breakage!

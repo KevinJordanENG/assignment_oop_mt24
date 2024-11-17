@@ -42,9 +42,6 @@ class Supply:
     __general_goods: list[Good]
 
     def __new__(cls, *, num_food: int) -> Self:
-        # Error check for num_food.
-        if num_food < 2:
-            raise ValueError("Minimum starting food in inventory is 2.")
         self = super().__new__(cls)
         self.__limited_goods = self._init_limited_goods()
         self.__general_goods = self._init_general_goods(num_food)
