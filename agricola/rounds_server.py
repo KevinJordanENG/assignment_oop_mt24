@@ -1,20 +1,26 @@
 """
 Module providing the state machine(s) for game turn based logic.
 """
-
+from __future__ import annotations
+from contextvars import ContextVar
 from typing import Self
 
-from .type_defs import RoundSteps
+from .type_defs import GameStates
+from .gameboards import ActionSpaces
+from .players import Player
 
-# TODO: Maybe use context managers here!
+PhaseChangeRounds: set[int] = set([4, 7, 9, 11, 13, 14])
+"""Set of predefined rounds where game 'phase' changes. Also when harvest happens."""
 
 class PlayerActionServer:
     """Smallest sub state machine governing actions available to player who's turn it is."""
 
+    __game_state: GameState
     __active_player_id: int
 
-    def __new__(cls) -> Self:
+    def __new__(cls, game_state: GameState) -> Self:
         self = super().__new__(cls)
+        self.__game_state = game_state
         self.__active_player_id = 1
         return self
 
@@ -40,12 +46,15 @@ class PlayerActionServer:
 
 class TurnServer:
     """Small sub state machine governing 'person' placement turn logic."""
+    # Each round, players (clockwise/inc order) place all 'person's on action spaces one at a time.
 
+    __game_state: GameState
     __player_action_server: PlayerActionServer
 
-    def __new__(cls) -> Self:
+    def __new__(cls, game_state: GameState) -> Self:
         self = super().__new__(cls)
-        self.__player_action_server = PlayerActionServer()
+        self.__game_state = game_state
+        self.__player_action_server = PlayerActionServer(game_state)
         return self
 
     @property
@@ -54,31 +63,21 @@ class TurnServer:
         """Returns player action server object."""
         return self.__player_action_server
 
-    def _block_for_turn(self) -> None:
-        """Blocks game executions outside of permitted in-turn actions."""
-
     def _run_each_players_action_server(self) -> None:
         """"""
 
 
 class RoundServer:
     """Medium sub state machine handling state actions within a round."""
-# TODO: each round has 4 phases: 1) Preparation, 2) Work, 3) Returning home, 4) Harvest
-    # Each round, players (clockwise/inc order) place all 'person's on action spaces one at a time.
 
-    __round_step: RoundSteps
+    __game_state: GameState
     __turn_server: TurnServer
 
-    def __new__(cls) -> Self:
+    def __new__(cls, game_state: GameState) -> Self:
         self = super().__new__(cls)
-        self.__round_step = "preparation"
-        self.__turn_server = TurnServer()
+        self.__game_state = game_state
+        self.__turn_server = TurnServer(game_state)
         return self
-
-    @property
-    def round_step(self) -> RoundSteps:
-        """Returns the current step/phase of the current round."""
-        return self.__round_step
 
     @property
     def turn_server(self) -> TurnServer:
@@ -86,17 +85,20 @@ class RoundServer:
         """Returns turn server object."""
         return self.__turn_server
 
-    def _block_for_step(self) -> None:
-        """Blocks game executions outside of permitted in-step actions."""
+    def start_round(self, action_spaces: ActionSpaces, players: tuple[Player, ...]) -> None:
+        """Method to start the round."""
+        # Set state as appropriate.
+        self.__game_state.STATE.set("running_round_prep")
+        # Perform preparation actions.
+        action_spaces.add_action_space(
+            self.__game_state.round_number,
+            self.__game_state.phase_number
+        )
+        action_spaces._accumulate_all()
 
-# TODO: below relate to PREPARATION ___________________________
-    def _add_new_action_space(self) -> None:
-        """"""
-
-    def _players_get_goods_from_future_action_spaces(self) -> None:
-        """"""
-
-    def _populate_accum_spaces(self) -> None:
+# TODO: Move these to their respective objects!
+        self._players_get_goods_from_future_action_spaces(players)
+    def _players_get_goods_from_future_action_spaces(self, players: tuple[Player, ...]) -> None:
         """"""
 
 # TODO: below relate to WORK __________________________________
@@ -110,7 +112,7 @@ class RoundServer:
 # TODO: below relate to HARVEST _______________________________
     def _check_if_harvest_round(self) -> None:
         """"""
-        # rounds 4, 7, 9, 11, 13, and 14
+        # Use PhaseChangeRounds to check if harvest round
 
     def _harvest_crops(self) -> None:
         """"""
@@ -128,17 +130,19 @@ class RoundServer:
 
 class GameState:
     """Main state class that controls all sub-state components."""
-# TODO: game is played over 14 rounds, handled here
 
     __round_number: int
     __phase_number: int
     __round_server: RoundServer
 
+    STATE: ContextVar[GameStates] = ContextVar('STATE', default="not_started")
+    """Context variable allowing all server state managers to update/read game state."""
+
     def __new__(cls) -> Self:
         self = super().__new__(cls)
-        self.__round_number = 1
-        self.__phase_number = 1
-        self.__round_server = RoundServer()
+        self.__round_number = 0
+        self.__phase_number = 0
+        self.__round_server = RoundServer(self)
         return self
 
     @property
@@ -157,11 +161,19 @@ class GameState:
 # FIXME! Need to make sure read only or switch to getter/setter
         return self.__round_server
 
-    def _block_for_round(self) -> None:
-        """Blocks game executions outside of permitted in-round actions."""
+    def start(self) -> None:
+        """Starts game & changes game state."""
+        self.STATE.set("running_game")
+        self.__phase_number = 1
 
-    def _run_round_server(self) -> None:
-        """"""
+    def stop(self) -> None:
+        """Stops the game early."""
+        self.STATE.set("stopped_early")
+        self.__round_number = 0
+        self.__phase_number = 0
 
-    def _score_game_at_end(self) -> None:
-        """"""
+    def play_round(self) -> None:
+        """Starts the next round."""
+        self.__round_number += 1
+        if self.__round_number in PhaseChangeRounds:
+            self.__phase_number += 1

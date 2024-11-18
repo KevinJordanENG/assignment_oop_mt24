@@ -32,19 +32,15 @@ Dict containing named sets of starting coordinates as defined in rulebook.
 Marked as Final as these sets are predefined and illegal to modify.
 """
 
-STAGE_COORDS: dict[int, set[Coordinate]] = {
-    1: set([(0,2), (0,3), (1,3), (2,3)]),
-    2: set([(0,4), (1,4), (2,4)]),
-    3: set([(0,5), (1,5)]),
-    4: set([(0,6), (1,6)]),
-    5: set([(0,7), (1,7)]),
-    6: set([(0,8)])
-}
-"""
-Dict containing numbered sets of initial coordinates available per stage as defined in rulebook.
-Sets Not Final coords meant to be consumed as rounds advance and actions are place on gameboard.
-"""
-# FIXME! Need to turn these into lists or something ordered as coords have order, but cards don't.
+ROUND_COORDS: Final[list[Coordinate]] = [
+    (0,2), (0,3), (1,3), (2,3), # Phase 1
+    (0,4), (1,4), (2,4), # Phase 2
+    (0,5), (1,5), # Phase 3
+    (0,6), (1,6), # Phase 4
+    (0,7), (1,7), # Phase 5
+    (0,8) # Phase 6
+]
+"""List containing ordered coordinates available per stage as defined in rulebook."""
 
 # TODO: change these to real functions once they exist
 FuncNoEval = set([
@@ -101,6 +97,12 @@ class ActionSpaces(BaseBoard):
         """Action space specific move implementation."""
 # TODO: Please build!
 
+    def add_action_space(self, round_num: int, stage: int) -> None:
+        """Public method to add action space."""
+        line: ActionCSVLine = self._fetch_csv_line(round_num=round_num, stage=stage)
+        self._board[ROUND_COORDS[round_num-1]] = self._bundle_space_data(line)
+        self._valid_spaces.add(ROUND_COORDS[round_num-1])
+
     def _init_board_spaces(self, num_players: int) -> None:
         """Initializes specific action spaces board based on number of players."""
         if num_players in (1,2):
@@ -115,8 +117,8 @@ class ActionSpaces(BaseBoard):
         self.__csv_data = {}
         self._load_csv(path)
         for space in self._valid_spaces:
-            line = self._fetch_csv_line(space=space)
-            self._board[space] = self._add_action_space(line)
+            line = self._fetch_csv_line(round_num=0, space=space)
+            self._board[space] = self._bundle_space_data(line)
 
     def _accumulate_all(self) -> None:
         """Increases all accumulation spaces' goods by their respective amount."""
@@ -132,20 +134,20 @@ class ActionSpaces(BaseBoard):
             raise ValueError("Key / value pair for action data in CSV not found.")
         return ans
 
-    def _select_rand_round_action(self, stage: int) -> ActionCSVLine:
+    def _select_rand_round_action(self, round_num: int, stage: int) -> ActionCSVLine:
         """Randomly selects from remaining stage action spaces for the stage."""
-# FIXME! The coords actually have order, the cards must not, add to decks the rand selection.
         sub_set = []
         for item in self.__csv_data.items():
             if (item[1]["stage"] == stage) and (item[1]["coord"] == (-1,-1)):
                 sub_set.append(item)
         rnd = random.randint(0, len(sub_set)-1)
-        sub_set[rnd][1]["coord"] = STAGE_COORDS[stage].pop()
+        sub_set[rnd][1]["coord"] = ROUND_COORDS[round_num-1]
         return sub_set[rnd]
 
     def _fetch_csv_line(
             self,
             *,
+            round_num: int,
             stage: int = 0,
             space: Coordinate|None = None
         ) -> ActionCSVLine:
@@ -158,12 +160,12 @@ class ActionSpaces(BaseBoard):
         if space is not None and stage == 0:
             return self._find_in_csv_data("coord", space)
         if space is None and (0 < stage < 7):
-            return self._select_rand_round_action(stage)
+            return self._select_rand_round_action(round_num, stage)
         raise ValueError(
             "Cannot request action space by both coordinate and stage at same time."
         )
 
-    def _add_action_space(self, csv_line: ActionCSVLine) -> SpaceData:
+    def _bundle_space_data(self, csv_line: ActionCSVLine) -> SpaceData:
         """Adds action space (once per round) from remaining actions per stage."""
         space_data: SpaceData = {
             "coordinate": csv_line[1]["coord"],

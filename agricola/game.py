@@ -13,7 +13,7 @@ from .players import Player
 from .gameboards import ActionSpaces, Tiles
 from .rounds_server import GameState
 from .cards import Deck
-from .type_defs import SpaceType, GoodsType, Location, Coordinate
+from .type_defs import SpaceType, GoodsType, Location, Coordinate, GameStates, StateError
 
 
 class Game:
@@ -72,6 +72,11 @@ class Game:
         return self.__state.phase_number
 
     @property
+    def game_state(self) -> GameStates:
+        """Returns the current state of the game from GameState server."""
+        return self.__state.STATE.get()
+
+    @property
     def players(self) -> tuple[Player, ...]:
         """Returns read only view of players currently in the game."""
 # FIXME! Need to make sure return is ACTUALLY read only.
@@ -96,13 +101,42 @@ class Game:
         return self.__tiles
 
     def start_game(self) -> None:
-        """"""
+        """Public method to start the game after init/setup."""
+        # Check game is in valid state.
+        valid_states: set[GameStates] = {"not_started"}
+        self._is_valid_state_for_func(self._get_state(), valid_states)
+        self.__state.start()
+
+    def play_next_round(self) -> None:
+        """Public method to start the next round of game play (of 14 total)."""
+        # Check game is in valid state.
+        valid_states: set[GameStates] = {"running_game"}
+        self._is_valid_state_for_func(self._get_state(), valid_states)
+        self.__state.play_round()
+        self.__state.round_server.start_round(self.__action_spaces, self.__players)
 
     def quit_game_early(self) -> None:
-        """"""
+        """
+        Public method allowing early stopping of game.
+        Method puts game in state that requires re-starting with a fresh game instance.
+        """
+        # Check game is in valid state.
+        valid_states: set[GameStates] = {
+            "running_game",
+            "running_round_prep",
+            "running_round_return_home",
+            "running_round_harvest",
+            "running_work_turns",
+            "running_player_turn"
+        }
+        self._is_valid_state_for_func(self._get_state(), valid_states)
+        self.__state.stop()
 
     def score_game(self) -> None:
-        """"""
+        """Scores game for all players upon completion."""
+        valid_states: set[GameStates] = {"finished"}
+        self._is_valid_state_for_func(self._get_state(), valid_states)
+# TODO: build scoring logic
 
     def move_item(
             self,
@@ -115,17 +149,41 @@ class Game:
             prev_coord: Coordinate
         ) -> None:
         """Unified move routine that changes all necessary data."""
-# TODO: Add some SERIOUS error checking here via subroutine!
-        self._check_valid_move()
+# TODO: Add some SERIOUS error checking here via subroutine! --> probably in object being mod
+
         player.move_items(good, num_goods, new_board, new_coords, prev_board, prev_coord)
         self.__action_spaces.move(good, num_goods, new_board, new_coords, prev_board, prev_coord)
 
+    def _get_state(self) -> GameStates:
+        """Gets state of game."""
+        return self.__state.STATE.get()
+
+    def _is_valid_state_for_func(
+            self,
+            current_state: GameStates,
+            valid_states: set[GameStates]
+        ) -> bool:
+        """
+        Takes in current state & set of valid states,
+        returns True if current state is valid for function where called.
+        """
+        if current_state in valid_states:
+            return True
+        raise StateError("Illegal move attempted.")
+
     def _init_action_spaces(self, num_players: int, *, path: str) -> None:
         """Sets up the action spaces board depending on number of players."""
+        # Check game is in valid state.
+        valid_states: set[GameStates] = {"not_started"}
+        self._is_valid_state_for_func(self._get_state(), valid_states)
+        # Init.
         self.__action_spaces = ActionSpaces(num_players, path)
 
     def _init_tiles(self) -> None:
         """Initializes game store of limited 2 sided tiles."""
+        # Check game is in valid state.
+        valid_states: set[GameStates] = {"not_started"}
+        self._is_valid_state_for_func(self._get_state(), valid_states)
         # Init empty.
         self.__tiles = {}
         # Make sure we know they really are SpaceTypes.
@@ -141,18 +199,33 @@ class Game:
 
     def _init_major_imp_cards(self, *, path: str) -> None:
         """Sets up the major improvements card deck."""
+        # Check game is in valid state.
+        valid_states: set[GameStates] = {"not_started"}
+        self._is_valid_state_for_func(self._get_state(), valid_states)
+        # Init.
         self.__major_imp_cards = Deck("major", path=path)
 
     def _init_minor_imp_cards(self, *, path: str) -> Deck:
         """Loads full minor improvements card deck, used in player init, then extras dropped."""
+        # Check game is in valid state.
+        valid_states: set[GameStates] = {"not_started"}
+        self._is_valid_state_for_func(self._get_state(), valid_states)
+        # Init.
         return Deck("minor", path=path)
 
     def _init_occup_cards(self, *, path: str, num_players: int) -> Deck:
         """Loads occupation card deck per num_players, used in player init, then extras dropped."""
+        # Check game is in valid state.
+        valid_states: set[GameStates] = {"not_started"}
+        self._is_valid_state_for_func(self._get_state(), valid_states)
+        # Init.
         return Deck("occupation", path=path, num_players=num_players)
 
     def _init_players(self, num_players: int, minor: Deck, occup: Deck) -> tuple[Player, ...]:
         """Creates player instances for the game."""
+        # Check game is in valid state.
+        valid_states: set[GameStates] = {"not_started"}
+        self._is_valid_state_for_func(self._get_state(), valid_states)
         # Initially list so append works / iterative init for num_players.
         players_list: list[Player] = []
         # Generate random int to assign initial 'starting player' token based on num_players.
@@ -174,10 +247,3 @@ class Game:
             )
         # Cast to tuple for return making it immutable.
         return tuple(players_list)
-
-    def _check_valid_move(self) -> None:
-        """
-        Error checking logic for if move requested is valid.
-        Extensive and uses many subroutines as well as turn/round/stage server/state-machine.
-        """
-# TODO: Build this!

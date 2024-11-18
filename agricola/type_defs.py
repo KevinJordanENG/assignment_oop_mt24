@@ -4,6 +4,9 @@ Module containing TypeAlias' of common use items throughout agricola pkg.
 from typing import Literal
 
 
+class StateError(Exception):
+    """Error for trying to perform illegal game moves based on current game state."""
+
 Location = Literal["farmyard", "action_space", "inventory"]
 """Type alias for where good is located."""
 
@@ -197,10 +200,15 @@ OccupationNames = Literal[
 ]
 """Type alias for occupations card names, also keys to load properties from CSV."""
 
-RoundSteps = Literal[
-    "preparation",
-    "work",
-    "returning_home",
-    "harvest"
+GameStates = Literal[
+    "not_started", # Access to inspection ops or 'start' ops no mods or init
+    "stopped_early", # Error on all, raise error to try again
+    "finished", # Access to scoring, inspection, not mods
+    "running_game", # No access to init or start
+    "running_round_prep", # only access to prep func & inspection
+    "running_round_return_home", # only access to return home func & inspection
+    "running_round_harvest", # only access to harvest func & inspection
+    "running_work_turns", # general turn taking logic (all players)
+    "running_player_turn" # specific player turn logic
 ]
-"""Type alias for the 4 steps/phases within a round."""
+"""Type alias for all various game states."""
