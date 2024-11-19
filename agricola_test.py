@@ -7,4 +7,8 @@ from agricola import Game
 # Instantiate an instance of the agricola game.
 game1 = Game(num_players=2)
 
+game1.start_game()
+
+game1.play_next_round()
+
 print()

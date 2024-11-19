@@ -9,6 +9,10 @@ from .type_defs import GameStates
 from .gameboards import ActionSpaces
 from .players import Player
 
+
+class StateError(Exception):
+    """Error for trying to perform illegal game moves based on current game state."""
+
 PhaseChangeRounds: set[int] = set([4, 7, 9, 11, 13, 14])
 """Set of predefined rounds where game 'phase' changes. Also when harvest happens."""
 
@@ -94,12 +98,9 @@ class RoundServer:
             self.__game_state.round_number,
             self.__game_state.phase_number
         )
-        action_spaces._accumulate_all()
-
-# TODO: Move these to their respective objects!
-        self._players_get_goods_from_future_action_spaces(players)
-    def _players_get_goods_from_future_action_spaces(self, players: tuple[Player, ...]) -> None:
-        """"""
+        action_spaces.accumulate_all()
+        for player in players:
+            player.get_goods_from_future_action_spaces()
 
 # TODO: below relate to WORK __________________________________
     def _run_turn_server(self) -> None:
@@ -177,3 +178,16 @@ class GameState:
         self.__round_number += 1
         if self.__round_number in PhaseChangeRounds:
             self.__phase_number += 1
+
+    def is_valid_state_for_func(
+            self,
+            current_state: GameStates,
+            valid_states: set[GameStates]
+        ) -> bool:
+        """
+        Takes in current state & set of valid states,
+        returns True if current state is valid for function where called.
+        """
+        if current_state in valid_states:
+            return True
+        raise StateError("Illegal move attempted.")

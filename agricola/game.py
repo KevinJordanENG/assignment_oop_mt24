@@ -13,7 +13,7 @@ from .players import Player
 from .gameboards import ActionSpaces, Tiles
 from .rounds_server import GameState
 from .cards import Deck
-from .type_defs import SpaceType, GoodsType, Location, Coordinate, GameStates, StateError
+from .type_defs import SpaceType, GoodsType, Location, Coordinate, GameStates
 
 
 class Game:
@@ -104,14 +104,14 @@ class Game:
         """Public method to start the game after init/setup."""
         # Check game is in valid state.
         valid_states: set[GameStates] = {"not_started"}
-        self._is_valid_state_for_func(self._get_state(), valid_states)
+        self.__state.is_valid_state_for_func(self.game_state, valid_states)
         self.__state.start()
 
     def play_next_round(self) -> None:
         """Public method to start the next round of game play (of 14 total)."""
         # Check game is in valid state.
         valid_states: set[GameStates] = {"running_game"}
-        self._is_valid_state_for_func(self._get_state(), valid_states)
+        self.__state.is_valid_state_for_func(self.game_state, valid_states)
         self.__state.play_round()
         self.__state.round_server.start_round(self.__action_spaces, self.__players)
 
@@ -129,13 +129,13 @@ class Game:
             "running_work_turns",
             "running_player_turn"
         }
-        self._is_valid_state_for_func(self._get_state(), valid_states)
+        self.__state.is_valid_state_for_func(self.game_state, valid_states)
         self.__state.stop()
 
     def score_game(self) -> None:
         """Scores game for all players upon completion."""
         valid_states: set[GameStates] = {"finished"}
-        self._is_valid_state_for_func(self._get_state(), valid_states)
+        self.__state.is_valid_state_for_func(self.game_state, valid_states)
 # TODO: build scoring logic
 
     def move_item(
@@ -154,28 +154,11 @@ class Game:
         player.move_items(good, num_goods, new_board, new_coords, prev_board, prev_coord)
         self.__action_spaces.move(good, num_goods, new_board, new_coords, prev_board, prev_coord)
 
-    def _get_state(self) -> GameStates:
-        """Gets state of game."""
-        return self.__state.STATE.get()
-
-    def _is_valid_state_for_func(
-            self,
-            current_state: GameStates,
-            valid_states: set[GameStates]
-        ) -> bool:
-        """
-        Takes in current state & set of valid states,
-        returns True if current state is valid for function where called.
-        """
-        if current_state in valid_states:
-            return True
-        raise StateError("Illegal move attempted.")
-
     def _init_action_spaces(self, num_players: int, *, path: str) -> None:
         """Sets up the action spaces board depending on number of players."""
         # Check game is in valid state.
         valid_states: set[GameStates] = {"not_started"}
-        self._is_valid_state_for_func(self._get_state(), valid_states)
+        self.__state.is_valid_state_for_func(self.game_state, valid_states)
         # Init.
         self.__action_spaces = ActionSpaces(num_players, path)
 
@@ -183,7 +166,7 @@ class Game:
         """Initializes game store of limited 2 sided tiles."""
         # Check game is in valid state.
         valid_states: set[GameStates] = {"not_started"}
-        self._is_valid_state_for_func(self._get_state(), valid_states)
+        self.__state.is_valid_state_for_func(self.game_state, valid_states)
         # Init empty.
         self.__tiles = {}
         # Make sure we know they really are SpaceTypes.
@@ -201,7 +184,7 @@ class Game:
         """Sets up the major improvements card deck."""
         # Check game is in valid state.
         valid_states: set[GameStates] = {"not_started"}
-        self._is_valid_state_for_func(self._get_state(), valid_states)
+        self.__state.is_valid_state_for_func(self.game_state, valid_states)
         # Init.
         self.__major_imp_cards = Deck("major", path=path)
 
@@ -209,7 +192,7 @@ class Game:
         """Loads full minor improvements card deck, used in player init, then extras dropped."""
         # Check game is in valid state.
         valid_states: set[GameStates] = {"not_started"}
-        self._is_valid_state_for_func(self._get_state(), valid_states)
+        self.__state.is_valid_state_for_func(self.game_state, valid_states)
         # Init.
         return Deck("minor", path=path)
 
@@ -217,7 +200,7 @@ class Game:
         """Loads occupation card deck per num_players, used in player init, then extras dropped."""
         # Check game is in valid state.
         valid_states: set[GameStates] = {"not_started"}
-        self._is_valid_state_for_func(self._get_state(), valid_states)
+        self.__state.is_valid_state_for_func(self.game_state, valid_states)
         # Init.
         return Deck("occupation", path=path, num_players=num_players)
 
@@ -225,7 +208,7 @@ class Game:
         """Creates player instances for the game."""
         # Check game is in valid state.
         valid_states: set[GameStates] = {"not_started"}
-        self._is_valid_state_for_func(self._get_state(), valid_states)
+        self.__state.is_valid_state_for_func(self.game_state, valid_states)
         # Initially list so append works / iterative init for num_players.
         players_list: list[Player] = []
         # Generate random int to assign initial 'starting player' token based on num_players.

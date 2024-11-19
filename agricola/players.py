@@ -109,6 +109,9 @@ class Player:
     def grains_or_veg_to_food(self) -> None:
         """"""
 
+    def get_goods_from_future_action_spaces(self) -> None:
+        """"""
+
     def move_items(
             self,
             item: GoodsType,

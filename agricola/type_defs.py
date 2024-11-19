@@ -4,9 +4,6 @@ Module containing TypeAlias' of common use items throughout agricola pkg.
 from typing import Literal
 
 
-class StateError(Exception):
-    """Error for trying to perform illegal game moves based on current game state."""
-
 Location = Literal["farmyard", "action_space", "inventory"]
 """Type alias for where good is located."""
 

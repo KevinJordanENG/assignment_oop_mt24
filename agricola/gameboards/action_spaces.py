@@ -103,6 +103,9 @@ class ActionSpaces(BaseBoard):
         self._board[ROUND_COORDS[round_num-1]] = self._bundle_space_data(line)
         self._valid_spaces.add(ROUND_COORDS[round_num-1])
 
+    def accumulate_all(self) -> None:
+        """Increases all accumulation spaces' goods by their respective amount."""
+
     def _init_board_spaces(self, num_players: int) -> None:
         """Initializes specific action spaces board based on number of players."""
         if num_players in (1,2):
@@ -119,9 +122,6 @@ class ActionSpaces(BaseBoard):
         for space in self._valid_spaces:
             line = self._fetch_csv_line(round_num=0, space=space)
             self._board[space] = self._bundle_space_data(line)
-
-    def _accumulate_all(self) -> None:
-        """Increases all accumulation spaces' goods by their respective amount."""
 
     def _find_in_csv_data(self, key: str, value: Any) -> ActionCSVLine:
         """Iterates over all action items looking in their dicts for specified k/v pair."""
