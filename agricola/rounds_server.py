@@ -7,7 +7,7 @@ from typing import Self
 
 from .type_defs import GameStates
 from .gameboards import ActionSpaces
-from .players import Player
+from .players import Player, Players
 
 
 class StateError(Exception):
@@ -33,8 +33,8 @@ class PlayerActionServer:
         """Returns the id of the currently active player."""
         return self.__active_player_id
 
-    def _block_for_player_action(self) -> None:
-        """Blocks game executions outside of permitted player actions."""
+    def play_next_player_actions(self) -> None:
+        """Sets state to next player for them to take actions."""
 
     def _place_player(self) -> None:
         """"""
@@ -48,9 +48,28 @@ class PlayerActionServer:
         """"""
 
 
-class TurnServer:
-    """Small sub state machine governing 'person' placement turn logic."""
-    # Each round, players (clockwise/inc order) place all 'person's on action spaces one at a time.
+# class TurnServer:
+#     """Small sub state machine governing 'person' placement turn logic."""
+#     # Each round, players (clockwise/inc order) place all 'person's on action spaces one at a time.
+
+#     __game_state: GameState
+#     __player_action_server: PlayerActionServer
+
+#     def __new__(cls, game_state: GameState) -> Self:
+#         self = super().__new__(cls)
+#         self.__game_state = game_state
+#         self.__player_action_server = PlayerActionServer(game_state)
+#         return self
+
+#     @property
+#     def player_action_server(self) -> PlayerActionServer:
+# # FIXME! Need to make sure read only or switch to getter/setter
+#         """Returns player action server object."""
+#         return self.__player_action_server
+
+
+class RoundServer:
+    """Medium sub state machine handling state actions within a round."""
 
     __game_state: GameState
     __player_action_server: PlayerActionServer
@@ -67,29 +86,7 @@ class TurnServer:
         """Returns player action server object."""
         return self.__player_action_server
 
-    def _run_each_players_action_server(self) -> None:
-        """"""
-
-
-class RoundServer:
-    """Medium sub state machine handling state actions within a round."""
-
-    __game_state: GameState
-    __turn_server: TurnServer
-
-    def __new__(cls, game_state: GameState) -> Self:
-        self = super().__new__(cls)
-        self.__game_state = game_state
-        self.__turn_server = TurnServer(game_state)
-        return self
-
-    @property
-    def turn_server(self) -> TurnServer:
-# FIXME! Need to make sure read only or switch to getter/setter
-        """Returns turn server object."""
-        return self.__turn_server
-
-    def start_round(self, action_spaces: ActionSpaces, players: tuple[Player, ...]) -> None:
+    def start_round(self, action_spaces: ActionSpaces, players: Players) -> None:
         """Method to start the round."""
         # Set state as appropriate.
         self.__game_state.STATE.set("running_round_prep")
@@ -99,12 +96,8 @@ class RoundServer:
             self.__game_state.phase_number
         )
         action_spaces.accumulate_all()
-        for player in players:
-            player.get_goods_from_future_action_spaces()
-
-# TODO: below relate to WORK __________________________________
-    def _run_turn_server(self) -> None:
-        """"""
+        for player in players.players_tup:
+            player.get_goods_from_future_action_spaces(self.__game_state.round_number)
 
 # TODO: below relate to RETURNING HOME ________________________
     def _return_people_home(self) -> None:

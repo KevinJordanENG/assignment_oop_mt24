@@ -9,7 +9,7 @@ import random
 from uuid import uuid4
 from typing import Self, cast
 
-from .players import Player
+from .players import Player, Players
 from .gameboards import ActionSpaces, Tiles
 from .rounds_server import GameState
 from .cards import Deck
@@ -23,7 +23,7 @@ class Game:
 
 # TODO: Implement flyweight cuz why not!
     __instance_uuid: str
-    __players: tuple[Player, ...]
+    __player: Players
     __action_spaces: ActionSpaces
     __tiles: dict[tuple[SpaceType, SpaceType], Tiles]
     __major_imp_cards: Deck
@@ -51,7 +51,7 @@ class Game:
         minor_imps_full = self._init_minor_imp_cards(path=data_dir_path)
         occups_full = self._init_occup_cards(path=data_dir_path, num_players=num_players)
         # Init players.
-        self.__players = self._init_players(num_players, minor_imps_full, occups_full)
+        self.__player = self._init_players(num_players, minor_imps_full, occups_full)
         # Delete leftovers from these decks as remaining cards not needed after game init.
         del minor_imps_full, occups_full
         return self
@@ -77,10 +77,10 @@ class Game:
         return self.__state.STATE.get()
 
     @property
-    def players(self) -> tuple[Player, ...]:
-        """Returns read only view of players currently in the game."""
+    def player(self) -> Players:
+        """Returns read only view of all players currently in the game."""
 # FIXME! Need to make sure return is ACTUALLY read only.
-        return self.__players
+        return self.__player
 
     @property
     def action_spaces(self) -> ActionSpaces:
@@ -107,13 +107,25 @@ class Game:
         self.__state.is_valid_state_for_func(self.game_state, valid_states)
         self.__state.start()
 
-    def play_next_round(self) -> None:
+    def start_next_round(self) -> None:
         """Public method to start the next round of game play (of 14 total)."""
         # Check game is in valid state.
         valid_states: set[GameStates] = {"running_game"}
         self.__state.is_valid_state_for_func(self.game_state, valid_states)
         self.__state.play_round()
-        self.__state.round_server.start_round(self.__action_spaces, self.__players)
+        self.__state.round_server.start_round(self.__action_spaces, self.__player)
+
+    def play_next_player_work_actions(self) -> None:
+        """Public method to play the next player action in the work step of round."""
+        # Check game is in valid state.
+        valid_states: set[GameStates] = {
+            "running_round_prep",
+            "running_work_player_1",
+            "running_work_player_2",
+            "running_work_player_3"
+        }
+        self.__state.is_valid_state_for_func(self.game_state, valid_states)
+        self.__state.round_server.player_action_server.play_next_player_actions()
 
     def quit_game_early(self) -> None:
         """
@@ -126,8 +138,10 @@ class Game:
             "running_round_prep",
             "running_round_return_home",
             "running_round_harvest",
-            "running_work_turns",
-            "running_player_turn"
+            "running_work_player_1",
+            "running_work_player_2",
+            "running_work_player_3",
+            "running_work_player_4"
         }
         self.__state.is_valid_state_for_func(self.game_state, valid_states)
         self.__state.stop()
@@ -204,7 +218,7 @@ class Game:
         # Init.
         return Deck("occupation", path=path, num_players=num_players)
 
-    def _init_players(self, num_players: int, minor: Deck, occup: Deck) -> tuple[Player, ...]:
+    def _init_players(self, num_players: int, minor: Deck, occup: Deck) -> Players:
         """Creates player instances for the game."""
         # Check game is in valid state.
         valid_states: set[GameStates] = {"not_started"}
@@ -228,5 +242,5 @@ class Game:
                     starting=(player+1 == rnd)
                 )
             )
-        # Cast to tuple for return making it immutable.
-        return tuple(players_list)
+        # Use list of player to init Players class (cast to tuple when passing in).
+        return Players(tuple(players_list))

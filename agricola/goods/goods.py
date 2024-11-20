@@ -92,23 +92,6 @@ class Supply:
         self._change_good_board(fetch, new_board)
         self._change_good_coord(fetch, new_coords)
 
-    def _init_limited_goods(self) -> list[Good]:
-        """Initializes inventory of limited goods."""
-        fence: Good = {"goods_type": "fence", "location": "inventory", "coordinate": (-1, -1)}
-        stable: Good = {"goods_type": "stable", "location": "inventory", "coordinate": (-1, -1)}
-        person: Good = {"goods_type": "person", "location": "inventory", "coordinate": (-1, -1)}
-        # Use of deepcopy to assure each Good is its own unique object.
-        fences = [deepcopy(fence) for _ in range(15)]
-        stables = [deepcopy(stable) for _ in range(4)]
-        persons = [deepcopy(person) for _ in range(5)]
-        return fences + stables + persons
-
-    def _init_general_goods(self, num_food: int) -> list[Good]:
-        """Initializes inventory of general goods, only food included at first."""
-        food: Good = {"goods_type": "food", "location": "inventory", "coordinate": (-1, -1)}
-        # Use of deepcopy to assure each Good is its own unique object.
-        return [deepcopy(food) for _ in range(num_food)]
-
     def get_good(
             self,
             item: GoodsType,
@@ -137,6 +120,23 @@ class Supply:
                 and good["coordinate"] == prev_coord):
                 break
         return good
+
+    def _init_limited_goods(self) -> list[Good]:
+        """Initializes inventory of limited goods."""
+        fence: Good = {"goods_type": "fence", "location": "inventory", "coordinate": (-1, -1)}
+        stable: Good = {"goods_type": "stable", "location": "inventory", "coordinate": (-1, -1)}
+        person: Good = {"goods_type": "person", "location": "inventory", "coordinate": (-1, -1)}
+        # Use of deepcopy to assure each Good is its own unique object.
+        fences = [deepcopy(fence) for _ in range(15)]
+        stables = [deepcopy(stable) for _ in range(4)]
+        persons = [deepcopy(person) for _ in range(5)]
+        return fences + stables + persons
+
+    def _init_general_goods(self, num_food: int) -> list[Good]:
+        """Initializes inventory of general goods, only food included at first."""
+        food: Good = {"goods_type": "food", "location": "inventory", "coordinate": (-1, -1)}
+        # Use of deepcopy to assure each Good is its own unique object.
+        return [deepcopy(food) for _ in range(num_food)]
 
     def _change_good_coord(self, item: Good, new_coords: Coordinate) -> None:
         """Moves good to new gameboard coordinate or into inventory coord = (-1, -1)."""

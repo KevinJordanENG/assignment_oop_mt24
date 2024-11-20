@@ -26,6 +26,9 @@ class Player:
     __minor_imp_cards: Deck
     __occupation_cards: Deck
     __begging_markers: int
+    __has_future_goods_on_action_spaces: bool
+    __future_goods: list[tuple[int,GoodsType]]
+                             # ^^^round_num
 
     def __new__(
             cls,
@@ -51,6 +54,8 @@ class Player:
         self.__player_major_imp_cards = None
         self.__minor_imp_cards = minor_imp_cards
         self.__occupation_cards = occup_cards
+        self.__has_future_goods_on_action_spaces = False
+        self.__future_goods = []
         return self
 
     @property
@@ -109,8 +114,18 @@ class Player:
     def grains_or_veg_to_food(self) -> None:
         """"""
 
-    def get_goods_from_future_action_spaces(self) -> None:
-        """"""
+    def get_goods_from_future_action_spaces(self, round_num: int) -> None:
+        """If player has items on future action spaces, this add them to player's inventory."""
+        if self.__has_future_goods_on_action_spaces:
+            for future_good in self.__future_goods:
+                if future_good[0] == round_num:
+                    self.__supply.add(
+                        {
+                            "goods_type": future_good[1],
+                            "location": "inventory",
+                            "coordinate": (-1,-1)
+                        }
+                    )
 
     def move_items(
             self,
@@ -131,3 +146,68 @@ class Player:
         self.__supply.move("person", "farmyard", (2,0), "inventory", (-1,-1))
         self.__farmyard.set_person((1,0))
         self.__farmyard.set_person((2,0))
+
+
+class Players:
+    """
+    Combination/convenience class that unifies all 4 possible players 
+    for easy '.' access to player methods as well as iterable collection.
+    """
+
+    __one: Player
+    __two: Player
+    __three: Player
+    __four: Player
+    __num_players: int
+    __players_tup: tuple[Player, ...]
+
+    def __new__(cls, players_tup: tuple[Player, ...]) -> Self:
+        self = super().__new__(cls)
+        self.__players_tup = players_tup
+        self.__num_players = len(players_tup)
+        if self.num_players == 1:
+            self.__one = players_tup[0]
+        elif self.num_players == 2:
+            self.__one = players_tup[0]
+            self.__two = players_tup[1]
+        elif self.num_players == 3:
+            self.__one = players_tup[0]
+            self.__two = players_tup[1]
+            self.__three = players_tup[2]
+        elif self.num_players == 4:
+            self.__one = players_tup[0]
+            self.__two = players_tup[1]
+            self.__three = players_tup[2]
+            self.__four = players_tup[3]
+        return self
+
+    @property
+    def one(self) -> Player:
+        """Returns player one & their methods."""
+        return self.__one
+
+    @property
+    def two(self) -> Player:
+        """Returns player two & their methods."""
+        return self.__two
+
+    @property
+    def three(self) -> Player:
+        """Returns player three & their methods."""
+        return self.__three
+
+    @property
+    def four(self) -> Player:
+        """Returns player four & their methods."""
+        return self.__four
+
+    @property
+    def num_players(self) -> int:
+        """Returns number of players in current game."""
+        return self.__num_players
+
+    @property
+    def players_tup(self) -> tuple[Player, ...]:
+        """Returns iterable collection of players for easier batch ops."""
+# FIXME! Need to make sure read only
+        return self.__players_tup

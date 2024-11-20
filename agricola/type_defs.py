@@ -205,7 +205,9 @@ GameStates = Literal[
     "running_round_prep", # only access to prep func & inspection
     "running_round_return_home", # only access to return home func & inspection
     "running_round_harvest", # only access to harvest func & inspection
-    "running_work_turns", # general turn taking logic (all players)
-    "running_player_turn" # specific player turn logic
+    "running_work_player_1", # player turn logic
+    "running_work_player_2",
+    "running_work_player_3",
+    "running_work_player_4"
 ]
 """Type alias for all various game states."""

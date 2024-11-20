@@ -13,6 +13,7 @@ class SpaceData(TypedDict):
     space_type: SpaceType
     occupied: bool
     accumulate: bool
+    accum_number: int
     goods_type: GoodsType | None
     num_present: int
     action: Action | None

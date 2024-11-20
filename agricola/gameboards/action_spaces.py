@@ -105,6 +105,9 @@ class ActionSpaces(BaseBoard):
 
     def accumulate_all(self) -> None:
         """Increases all accumulation spaces' goods by their respective amount."""
+        for data in self._board.values():
+            if data["accumulate"]:
+                data["num_present"] += data["accum_number"]
 
     def _init_board_spaces(self, num_players: int) -> None:
         """Initializes specific action spaces board based on number of players."""
@@ -172,8 +175,9 @@ class ActionSpaces(BaseBoard):
             "space_type": "action",
             "occupied": False,
             "accumulate": csv_line[1]["accum"],
+            "accum_number": csv_line[1]["num_good"],
             "goods_type": csv_line[1]["goods_type"],
-            "num_present": csv_line[1]["num_good"],
+            "num_present": 0,
             "action": csv_line[0]
         }
         return space_data
