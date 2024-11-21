@@ -5,9 +5,9 @@ from __future__ import annotations
 from typing import Self, TYPE_CHECKING
 
 from .goods import Supply
-from .gameboards import Farmyard
+from .gameboards import Farmyard, MoveRequest
 from .cards import Deck
-from .type_defs import GoodsType, Location, Coordinate
+from .type_defs import GoodsType, Coordinate
 if TYPE_CHECKING:
     from .game import Game
 
@@ -108,11 +108,11 @@ class Player:
 # FIXME! Need to make sure ACTUALLY returns read only.
         return self.__occupation_cards
 
-    def discard_goods(self) -> None:
-        """"""
+    def discard_goods(self, good_type: GoodsType, number: int) -> None:
+        """Player action that can be called at any time to discard unwanted goods."""
 
-    def grains_or_veg_to_food(self) -> None:
-        """"""
+    def grains_or_veg_to_food(self, good_type: GoodsType, number: int) -> None:
+        """Player action that can be called at any time turning crops into food."""
 
     def get_goods_from_future_action_spaces(self, round_num: int) -> None:
         """If player has items on future action spaces, this add them to player's inventory."""
@@ -127,25 +127,34 @@ class Player:
                         }
                     )
 
-    def move_items(
+    def place_player_on_action_space(
             self,
-            item: GoodsType,
-            num_goods: int,
-            new_board: Location,
-            new_coords: Coordinate,
-            prev_board: Location,
-            prev_coord: Coordinate
+            destination_coord: Coordinate,
+            source_coord: Coordinate
         ) -> None:
+        """Player public method to place a 'person' on the action spaces board."""
+        if destination_coord not in self.__game.action_spaces.open_spaces:
+            raise ValueError("Coordinate is already occupied.")
+        self.__supply.move("person", 1, "action_space", destination_coord, "farmyard", source_coord)
+        self.__farmyard.move(
+            "person", 1, "action_space", destination_coord, "farmyard", source_coord
+        )
+        self.__game.action_spaces.move(
+            "person", 1, "action_space", destination_coord, "farmyard", source_coord
+        )
+
+    def move_items(self, move_request: MoveRequest) -> None:
         """Player call to move selected item(s) around player controlled spaces."""
-        self.__supply.move(item, new_board, new_coords, prev_board, prev_coord)
-        self.__farmyard.move(item, num_goods, new_board, new_coords, prev_board, prev_coord)
+        self.__supply.move(**move_request)
+        self.__farmyard.move(**move_request)
+        self.__game.action_spaces.move(**move_request)
 
     def _init_persons(self) -> None:
         """Move a person piece from one coordinate & board to another."""
-        self.__supply.move("person", "farmyard", (1,0), "inventory", (-1,-1))
-        self.__supply.move("person", "farmyard", (2,0), "inventory", (-1,-1))
-        self.__farmyard.set_person((1,0))
-        self.__farmyard.set_person((2,0))
+        self.__supply.move("person", 1, "farmyard", (1,0), "inventory", (-1,-1))
+        self.__supply.move("person", 1, "farmyard", (2,0), "inventory", (-1,-1))
+        self.__farmyard.move("person", 1, "farmyard", (1,0), "inventory", (-1,-1))
+        self.__farmyard.move("person", 1, "farmyard", (2,0), "inventory", (-1,-1))
 
 
 class Players:

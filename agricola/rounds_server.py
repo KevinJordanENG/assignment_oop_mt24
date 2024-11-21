@@ -7,7 +7,7 @@ from typing import Self
 
 from .type_defs import GameStates
 from .gameboards import ActionSpaces
-from .players import Player, Players
+from .players import Players
 
 
 class StateError(Exception):
@@ -35,9 +35,16 @@ class PlayerActionServer:
 
     def play_next_player_actions(self) -> None:
         """Sets state to next player for them to take actions."""
-
-    def _place_player(self) -> None:
-        """"""
+        # Set state as appropriate.
+        if (self.__game_state.STATE.get() == "running_round_prep"
+            or self.__game_state.STATE.get() == "running_work_player_4"):
+            self.__game_state.STATE.set("running_work_player_1")
+        if self.__game_state.STATE.get() == "running_work_player_1":
+            self.__game_state.STATE.set("running_work_player_2")
+        if self.__game_state.STATE.get() == "running_work_player_2":
+            self.__game_state.STATE.set("running_work_player_3")
+        if self.__game_state.STATE.get() == "running_work_player_3":
+            self.__game_state.STATE.set("running_work_player_4")
 
     def _make_decision(self) -> None:
         """"""
@@ -125,17 +132,22 @@ class RoundServer:
 class GameState:
     """Main state class that controls all sub-state components."""
 
+# TODO: Consider joining RoundServer & PlayerActionServer into main GameState
+    # Not currently clear why separate classes are beneficial...
+
     __round_number: int
     __phase_number: int
+    __num_players: int
     __round_server: RoundServer
 
     STATE: ContextVar[GameStates] = ContextVar('STATE', default="not_started")
     """Context variable allowing all server state managers to update/read game state."""
 
-    def __new__(cls) -> Self:
+    def __new__(cls, num_players: int) -> Self:
         self = super().__new__(cls)
         self.__round_number = 0
         self.__phase_number = 0
+        self.__num_players = num_players
         self.__round_server = RoundServer(self)
         return self
 
@@ -181,6 +193,36 @@ class GameState:
         Takes in current state & set of valid states,
         returns True if current state is valid for function where called.
         """
-        if current_state in valid_states:
+        subset_valid_states = self._filter_valid_states_by_num_players(valid_states)
+        if current_state in subset_valid_states:
             return True
         raise StateError("Illegal move attempted.")
+
+    def _filter_valid_states_by_num_players(self, valid_states: set[GameStates]) -> set[GameStates]:
+        """Takes in set of normally valid states and returns subset based on num_players."""
+# TODO: Maybe check this logic as more funcs added.
+        if self.__num_players == 1:
+            if "running_work_player_1" in valid_states:
+                valid_states.remove("running_work_player_1")
+            if "running_work_player_2" in valid_states:
+                valid_states.remove("running_work_player_2")
+            if "running_work_player_3" in valid_states:
+                valid_states.remove("running_work_player_3")
+            if "running_work_player_4" in valid_states:
+                valid_states.remove("running_work_player_4")
+        if self.__num_players == 2:
+            if "running_work_player_2" in valid_states:
+                valid_states.remove("running_work_player_2")
+            if "running_work_player_3" in valid_states:
+                valid_states.remove("running_work_player_3")
+            if "running_work_player_4" in valid_states:
+                valid_states.remove("running_work_player_4")
+        if self.__num_players == 3:
+            if "running_work_player_3" in valid_states:
+                valid_states.remove("running_work_player_3")
+            if "running_work_player_4" in valid_states:
+                valid_states.remove("running_work_player_4")
+        if self.__num_players == 4:
+            if "running_work_player_4" in valid_states:
+                valid_states.remove("running_work_player_4")
+        return valid_states

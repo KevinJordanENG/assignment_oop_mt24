@@ -13,6 +13,4 @@ game1.start_next_round()
 
 game1.play_next_player_work_actions()
 
-
-
 print()

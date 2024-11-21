@@ -10,10 +10,10 @@ from uuid import uuid4
 from typing import Self, cast
 
 from .players import Player, Players
-from .gameboards import ActionSpaces, Tiles
+from .gameboards import ActionSpaces, Tiles, MoveRequest
 from .rounds_server import GameState
 from .cards import Deck
-from .type_defs import SpaceType, GoodsType, Location, Coordinate, GameStates
+from .type_defs import SpaceType, Coordinate, GameStates, GoodsType, Location
 
 
 class Game:
@@ -43,7 +43,7 @@ class Game:
         if (num_players < 1) or (num_players > 4):
             raise ValueError("Number of players must be between 1 and 4.")
         self.__instance_uuid = instance_uuid
-        self.__state = GameState()
+        self.__state = GameState(num_players)
         self._init_action_spaces(num_players, path=data_dir_path)
         self._init_tiles()
         self._init_major_imp_cards(path=data_dir_path)
@@ -127,6 +127,33 @@ class Game:
         self.__state.is_valid_state_for_func(self.game_state, valid_states)
         self.__state.round_server.player_action_server.play_next_player_actions()
 
+    def place_player_on_action_space(
+            self,
+            destination_coord: Coordinate,
+            source_coord: Coordinate,
+            *,
+            player_id: int
+        ) -> None:
+        """
+        Game public method to place a 'person' on the action spaces board for specified player.
+        Method just forwards to game.player.player_id.place_player() via tuple index.
+        """
+        # Check game is in valid state.
+        valid_states: set[GameStates] = {
+            "running_work_player_1",
+            "running_work_player_2",
+            "running_work_player_3",
+            "running_work_player_4"
+        }
+        self.__state.is_valid_state_for_func(self.game_state, valid_states)
+        self.__player.players_tup[player_id-1].place_player_on_action_space(
+            destination_coord, source_coord
+        )
+
+    def move_item(self, move_request: MoveRequest, *, player_id: int) -> None:
+        """Unified move routine from 'game' directly that changes all necessary data."""
+        self.__player.players_tup[player_id-1].move_items(move_request)
+
     def quit_game_early(self) -> None:
         """
         Public method allowing early stopping of game.
@@ -152,21 +179,26 @@ class Game:
         self.__state.is_valid_state_for_func(self.game_state, valid_states)
 # TODO: build scoring logic
 
-    def move_item(
+    def bundle_move_request(
             self,
-            player: Player,
-            good: GoodsType,
+            *,
+            goods_type: str,
             num_goods: int,
-            new_board: Location,
-            new_coords: Coordinate,
-            prev_board: Location,
-            prev_coord: Coordinate
-        ) -> None:
-        """Unified move routine that changes all necessary data."""
-# TODO: Add some SERIOUS error checking here via subroutine! --> probably in object being mod
-
-        player.move_items(good, num_goods, new_board, new_coords, prev_board, prev_coord)
-        self.__action_spaces.move(good, num_goods, new_board, new_coords, prev_board, prev_coord)
+            destination_board: str,
+            destination_coord: tuple[int,int],
+            source_board: str,
+            source_coord: tuple[int,int]
+        ) -> MoveRequest:
+        """Helper function that bundles/casts to TypedDict needed for requesting item moves."""
+        move_request: MoveRequest = {
+            "goods_type": cast(GoodsType, goods_type),
+            "num_goods": num_goods,
+            "destination_board": cast(Location, destination_board),
+            "destination_coord": cast(Coordinate, destination_coord),
+            "source_board": cast(Location, source_board),
+            "source_coord": cast(Coordinate, source_coord)
+        }
+        return move_request
 
     def _init_action_spaces(self, num_players: int, *, path: str) -> None:
         """Sets up the action spaces board depending on number of players."""

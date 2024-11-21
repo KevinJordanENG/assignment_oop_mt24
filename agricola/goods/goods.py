@@ -80,23 +80,26 @@ class Supply:
 
     def move(
             self,
-            item: GoodsType,
-            new_board: Location,
-            new_coords: Coordinate,
-            prev_board: Location | None = None,
-            prev_coord: Coordinate | None = None
+            goods_type: GoodsType,
+            num_goods: int,
+            destination_board: Location,
+            destination_coord: Coordinate,
+            source_board: Location | None = None,
+            source_coord: Coordinate | None = None
         ) -> None:
-        """Unified move routine handling board and coordinate changes."""
-        # Fetch item matching type and optionally previous coords/board if provided.
-        fetch = self.get_good(item, prev_board, prev_coord)
-        self._change_good_board(fetch, new_board)
-        self._change_good_coord(fetch, new_coords)
+        """Unified move routine handling board and coordinate changes of Goods."""
+        for _ in range(num_goods):
+            # Fetch item matching type and optionally previous coords/board if provided.
+            fetch = self.get_good(goods_type, source_board, source_coord)
+# TODO: add inventory silliness error checking here!
+            self._change_good_board(fetch, destination_board)
+            self._change_good_coord(fetch, destination_coord)
 
     def get_good(
             self,
             item: GoodsType,
-            prev_board: Location | None,
-            prev_coord: Coordinate | None
+            source_board: Location | None,
+            source_coord: Coordinate | None
         ) -> Good:
         """Finds specified good with given descriptors."""
         if item in {"fence", "stable", "person"}:
@@ -105,19 +108,19 @@ class Supply:
             stock_type = self.__general_goods
         good: Good
         for _, good in enumerate(stock_type):
-            if good["goods_type"] == item and prev_board is None and prev_coord is None:
+            if good["goods_type"] == item and source_board is None and source_coord is None:
                 break
             if (good["goods_type"] == item
-                and good["location"] == prev_board
-                and prev_coord is None):
+                and good["location"] == source_board
+                and source_coord is None):
                 break
             if (good["goods_type"] == item
-                and prev_board is None
-                and good["coordinate"] == prev_coord):
+                and source_board is None
+                and good["coordinate"] == source_coord):
                 break
             if (good["goods_type"] == item
-                and good["location"] == prev_board
-                and good["coordinate"] == prev_coord):
+                and good["location"] == source_board
+                and good["coordinate"] == source_coord):
                 break
         return good
 
@@ -138,10 +141,10 @@ class Supply:
         # Use of deepcopy to assure each Good is its own unique object.
         return [deepcopy(food) for _ in range(num_food)]
 
-    def _change_good_coord(self, item: Good, new_coords: Coordinate) -> None:
+    def _change_good_coord(self, item: Good, destination_coord: Coordinate) -> None:
         """Moves good to new gameboard coordinate or into inventory coord = (-1, -1)."""
-        item["coordinate"] = new_coords
+        item["coordinate"] = destination_coord
 
-    def _change_good_board(self, item: Good, new_board: Location) -> None:
+    def _change_good_board(self, item: Good, destination_board: Location) -> None:
         """Changes gameboard of good."""
-        item["location"] = new_board
+        item["location"] = destination_board

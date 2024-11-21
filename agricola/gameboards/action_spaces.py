@@ -2,15 +2,13 @@
 Action spaces module maintaining the main game board.
 """
 
-# TODO: each action space can only be used by 1 person each round
-
 import os
 import csv
 import ast
 import random
 from typing import Any, Final, cast, get_args
 from .board import BaseBoard, SpaceData
-from ..type_defs import Coordinate, Action, GoodsType, SpaceType, Location
+from ..type_defs import Coordinate, Action, GoodsType, SpaceType
 
 ActionCSVLine = tuple[Action, dict[str, Any]]
 """
@@ -84,18 +82,6 @@ class ActionSpaces(BaseBoard):
         self._init_board_spaces(num_players)
         # Populate initial spaces.
         self._populate_spaces(path)
-
-    def move(
-            self,
-            item: GoodsType,
-            num_goods: int,
-            new_board: Location,
-            new_coords: Coordinate,
-            prev_board: Location,
-            prev_coord: Coordinate
-        ) -> None:
-        """Action space specific move implementation."""
-# TODO: Please build!
 
     def add_action_space(self, round_num: int, stage: int) -> None:
         """Public method to add action space."""
@@ -174,6 +160,7 @@ class ActionSpaces(BaseBoard):
             "coordinate": csv_line[1]["coord"],
             "space_type": "action",
             "occupied": False,
+            "stabled": False,
             "accumulate": csv_line[1]["accum"],
             "accum_number": csv_line[1]["num_good"],
             "goods_type": csv_line[1]["goods_type"],

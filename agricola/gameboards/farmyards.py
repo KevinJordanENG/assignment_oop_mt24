@@ -6,7 +6,7 @@ Uses BaseBoard ABC to handle unified board logic.
 from typing import TypedDict, cast
 
 from .board import BaseBoard, SpaceData
-from ..type_defs import Coordinate, SpaceType, GoodsType, Location
+from ..type_defs import Coordinate, SpaceType
 
 class PerimeterData(TypedDict):
     """Lightweight way of keeping data on current perimeter usage."""
@@ -44,17 +44,18 @@ class Farmyard(BaseBoard):
 # FIXME! Need to make sure read only
         return self._board_perimeters
 
-    def move(
-            self,
-            item: GoodsType,
-            num_goods: int,
-            new_board: Location,
-            new_coords: Coordinate,
-            prev_board: Location,
-            prev_coord: Coordinate
-        ) -> None:
-        """Farmyard specific move implementation."""
-# TODO: Please build!
+    @property
+    def open_perimeters(self) -> dict[str, set[Coordinate]]:
+        """Returns read only view of open perimeter spaces."""
+# FIXME! Need to make sure read only
+        sub_dict: dict[str, set[Coordinate]] = {"v": set(), "h": set()}
+        for tup, data in self._board_perimeters.items():
+            if not data["occupied"]:
+                sub_dict[tup[0]].add(tup[1])
+        return sub_dict
+
+    def build_fence(self) -> None:
+        """Performs build fence action. Can only move fence from inventory to farmyard."""
 
     def change_space_type(self, coord: Coordinate, space_type: SpaceType) -> None:
         """Changes space type if request is valid/allowed."""
@@ -88,14 +89,17 @@ class Farmyard(BaseBoard):
             for i in iter(v):
                 if k == "v" and i in {(1,0), (2,0)}:
                     space_type = "blocked"
+                    occ = True
                 elif k == "h" and i in {(2,0), (3,0)}:
                     space_type = "blocked"
+                    occ = True
                 else:
                     space_type = "unused"
+                    occ = False
                 perimeter: PerimeterData = {
                     "coordinate": i,
                     "space_type": cast(SpaceType, space_type),
-                    "occupied": True
+                    "occupied": occ
                 }
                 self._board_perimeters[(k, i)] = perimeter
         # Assign spaces as unused unless starting houses.
@@ -108,7 +112,9 @@ class Farmyard(BaseBoard):
                 "coordinate": j,
                 "space_type": cast(SpaceType, space_type),
                 "occupied": False,
+                "stabled": False,
                 "accumulate": False,
+                "accum_number": 0,
                 "goods_type": None,
                 "num_present": 0,
                 "action": None
