@@ -114,6 +114,14 @@ class Player:
     def grains_or_veg_to_food(self, good_type: GoodsType, number: int) -> None:
         """Player action that can be called at any time turning crops into food."""
 
+    def move_animals_anytime(self) -> None:
+        """Player action that can be called at any time moving animals around farmyard."""
+
+    def build_fence(self) -> None:
+        """Performs build fence action. Delegates to farmyard's & supply's method."""
+        self.__farmyard.build_fence()
+        self.__supply.build_fence()
+
     def get_goods_from_future_action_spaces(self, round_num: int) -> None:
         """If player has items on future action spaces, this add them to player's inventory."""
         if self.__has_future_goods_on_action_spaces:
@@ -127,7 +135,7 @@ class Player:
                         }
                     )
 
-    def place_player_on_action_space(
+    def place_person_on_action_space(
             self,
             destination_coord: Coordinate,
             source_coord: Coordinate
@@ -135,26 +143,26 @@ class Player:
         """Player public method to place a 'person' on the action spaces board."""
         if destination_coord not in self.__game.action_spaces.open_spaces:
             raise ValueError("Coordinate is already occupied.")
-        self.__supply.move("person", 1, "action_space", destination_coord, "farmyard", source_coord)
         self.__farmyard.move(
             "person", 1, "action_space", destination_coord, "farmyard", source_coord
         )
         self.__game.action_spaces.move(
             "person", 1, "action_space", destination_coord, "farmyard", source_coord
         )
+        self.__supply.move("person", 1, "action_space", destination_coord, "farmyard", source_coord)
 
     def move_items(self, move_request: MoveRequest) -> None:
         """Player call to move selected item(s) around player controlled spaces."""
-        self.__supply.move(**move_request)
         self.__farmyard.move(**move_request)
         self.__game.action_spaces.move(**move_request)
+        self.__supply.move(**move_request)
 
     def _init_persons(self) -> None:
         """Move a person piece from one coordinate & board to another."""
-        self.__supply.move("person", 1, "farmyard", (1,0), "inventory", (-1,-1))
-        self.__supply.move("person", 1, "farmyard", (2,0), "inventory", (-1,-1))
         self.__farmyard.move("person", 1, "farmyard", (1,0), "inventory", (-1,-1))
         self.__farmyard.move("person", 1, "farmyard", (2,0), "inventory", (-1,-1))
+        self.__supply.move("person", 1, "farmyard", (1,0), "inventory", (-1,-1))
+        self.__supply.move("person", 1, "farmyard", (2,0), "inventory", (-1,-1))
 
 
 class Players:

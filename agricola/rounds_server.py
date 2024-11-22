@@ -39,11 +39,11 @@ class PlayerActionServer:
         if (self.__game_state.STATE.get() == "running_round_prep"
             or self.__game_state.STATE.get() == "running_work_player_4"):
             self.__game_state.STATE.set("running_work_player_1")
-        if self.__game_state.STATE.get() == "running_work_player_1":
+        elif self.__game_state.STATE.get() == "running_work_player_1":
             self.__game_state.STATE.set("running_work_player_2")
-        if self.__game_state.STATE.get() == "running_work_player_2":
+        elif self.__game_state.STATE.get() == "running_work_player_2":
             self.__game_state.STATE.set("running_work_player_3")
-        if self.__game_state.STATE.get() == "running_work_player_3":
+        elif self.__game_state.STATE.get() == "running_work_player_3":
             self.__game_state.STATE.set("running_work_player_4")
 
     def _make_decision(self) -> None:

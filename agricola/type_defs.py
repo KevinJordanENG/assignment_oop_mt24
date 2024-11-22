@@ -13,6 +13,9 @@ Type alias of coordinate where good is on respective gameboard, or inventory.
 Represented as (row, col) pair, and inventory defined as coord = (-1, -1).
 """
 
+Axis = Literal["v", "h"] | None
+"""Type alias to tag fence coordinates as either vertical or horizontal spaces."""
+
 GoodsType = Literal[
     "sheep",
     "boar",

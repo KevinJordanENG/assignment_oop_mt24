@@ -127,7 +127,7 @@ class Game:
         self.__state.is_valid_state_for_func(self.game_state, valid_states)
         self.__state.round_server.player_action_server.play_next_player_actions()
 
-    def place_player_on_action_space(
+    def place_person_on_action_space(
             self,
             destination_coord: Coordinate,
             source_coord: Coordinate,
@@ -146,7 +146,7 @@ class Game:
             "running_work_player_4"
         }
         self.__state.is_valid_state_for_func(self.game_state, valid_states)
-        self.__player.players_tup[player_id-1].place_player_on_action_space(
+        self.__player.players_tup[player_id-1].place_person_on_action_space(
             destination_coord, source_coord
         )
 

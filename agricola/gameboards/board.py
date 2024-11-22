@@ -12,6 +12,7 @@ class SpaceData(TypedDict):
     coordinate: Coordinate
     space_type: SpaceType
     occupied: bool
+    child: bool
     stabled: bool
     accumulate: bool
     accum_number: int
@@ -78,6 +79,12 @@ class BaseBoard(metaclass=ABCMeta):
             raise KeyError("Coordinate is not valid on this board.")
         return self._board[coord]["occupied"]
 
+    def child_present(self, coord: Coordinate) -> bool:
+        """Checks if supplied coordinate has child present."""
+        if coord not in self._valid_spaces:
+            raise KeyError("Coordinate is not valid on this board.")
+        return self._board[coord]["child"]
+
     def is_stabled(self, coord: Coordinate) -> bool:
         """Checks if supplied coordinates has stable built."""
         if coord not in self._valid_spaces:
@@ -133,80 +140,38 @@ class BaseBoard(metaclass=ABCMeta):
             raise ValueError (
                 "Fences cannot use general move method due to different coord system."
             )
-        if goods_type == "person":
+        elif goods_type == "person":
             self._move_person(destination_board, destination_coord, source_board, source_coord)
-        if goods_type == "stable":
-            self._move_stable(destination_board, destination_coord, source_board, source_coord)
-        if goods_type == "food":
-            self._move_food(
-                num_goods, destination_board, destination_coord, source_board, source_coord
-            )
-        if goods_type in {"sheep", "boar", "cattle"}:
+        elif goods_type == "stable":
+            self._move_stable(destination_board, destination_coord, source_board)
+        elif goods_type == "food":
+            self._move_food(num_goods, destination_board, source_board, source_coord)
+        elif goods_type in {"sheep", "boar", "cattle"}:
             self._move_animals(
-                num_goods, destination_board, destination_coord, source_board, source_coord
+                goods_type, num_goods, destination_board,
+                destination_coord, source_board, source_coord
             )
-        if goods_type in {"wood", "clay", "reed", "stone"}:
+        elif goods_type in {"wood", "clay", "reed", "stone"}:
             self._move_building_material(
-                num_goods, destination_board, destination_coord, source_board, source_coord
+                goods_type, num_goods, destination_board, source_board, source_coord
             )
-        if goods_type in {"grain", "vegetable"}:
+        elif goods_type in {"grain", "vegetable"}:
             self._move_crops(
-                num_goods, destination_board, destination_coord, source_board, source_coord
+                goods_type, num_goods, destination_board,
+                destination_coord, source_board, source_coord
             )
 
+    def _check_pasture_size_and_stables(self) -> int:
+        """
+        Checks the total size of pasture & total number of stables to determine capacity of space.
+        """
+# TODO: build this logic.
+        return 2
 
-        # Determine if any changes are needed.
-        if source_board == self.board_type:
-            space_data = self._board[source_coord]
-            # Check if we're trying to move back to inventory and shouldn't.
-# FIXME! Revisit to make sure list is complete once more funcs built.
-            if goods_type in {"person", "stable"} and destination_board == "inventory":
-                raise ValueError(f"Cannot move {goods_type} from farmyard back to inventory.")
-            # Check value & type of request.
-            else:
-                if goods_type != space_data["goods_type"]:
-                    raise ValueError(
-                        "Goods requested to be moved don't match type present as source coordinate."
-                    )
-                if num_goods > space_data["num_present"]:
-                    raise ValueError(
-                        "Requested to move more goods than are present at source coordinate."
-                    )
-            # Do mods now that verified valid move request.
-            if goods_type == "person":
-                space_data["occupied"] = False
-            elif goods_type == "stable":
-                raise ValueError("Cannot move 'stable' from farmyard.")
-            else:
-                if space_data["num_present"] == num_goods:
-                    space_data["goods_type"] = None
-                space_data["num_present"] -= num_goods
-        # Moving goods_type(s) onto farmyard.
-        elif destination_board == self.board_type:
-            space_data = self._board[destination_coord]
-            if goods_type == "person":
-                if space_data["space_type"] not in {"wood_room", "clay_room", "stone_room"}:
-                    raise ValueError("Person can only be placed in rooms.")
-                space_data["occupied"] = True
-            elif goods_type == "stable":
-                if space_data["space_type"] not in {"pasture", "unused"}:
-                    raise ValueError("Can only place stable on unused or pasture spaces.")
-
-                #self.change_space_type(destination_coord, )
-            elif goods_type in {"sheep", "boar", "cattle"}:
-                if space_data["space_type"] not in {"pasture", "unused"}:
-                    raise ValueError(
-                        "Animals must be properly housed in 'pasture' or unused space with stable."
-                    )
-                if space_data["num_present"] != 0 and space_data["goods_type"] != goods_type:
-                    raise ValueError(
-                        "Cannot put requested goods on space containing goods of different type."
-                    )
-                space_data["goods_type"] = goods_type
-                space_data["num_present"] += num_goods
-            #do work
-        else:
-            return
+# ---------------------- Move Functions ------------------------------------------------------------
+# These functions are knowingly long as lots of integral error checking are performed within.
+# While each error check could maybe be another sub-subfunction,
+# their usage is inherently joined and decided simpler when kept together.
 
     def _move_person(
             self,
@@ -216,32 +181,70 @@ class BaseBoard(metaclass=ABCMeta):
             source_coord: Coordinate
         ) -> None:
         """Moves 'person' according to game rules."""
-        # Decide if addition, removal, or no action is required.
-        if source_board == self.board_type:
-            pass
-        elif destination_board == self.board_type:
-            pass
+        # Decide if move path is valid & perform source/dest. actions as needed.
+        # inv -> farm
+        if source_board == "inventory" and destination_board == "farmyard":
+            # Can only be dest. board.
+            if self.board_type == "farmyard":
+                # Check if valid space type on farm.
+                if (self._board[destination_coord]["space_type"]
+                    not in {"wood_room", "clay_room", "stone_room"}):
+                    raise ValueError("Destination space is not a room.")
+                self._board[destination_coord]["occupied"] = True
+            else:
+                pass # No effect if action space as not involved here.
+        # inv -> act
+        elif source_board == "inventory" and destination_board == "action_space":
+            # Means we're taking 'have_kids' action.
+            if self.board_type == "action_space":
+                # Can't use twice so check if already a child present.
+                if self._board[destination_coord]["child"]:
+                    raise ValueError("Can't have 2nd child.")
+                self._board[destination_coord]["child"] = True
+            else:
+                pass # No effect if farmyard as not involved here.
+        # farm -> act
+        elif source_board == "farmyard" and destination_board == "action_space":
+            # We're a source.
+            if self.board_type == "farmyard":
+                self._board[source_coord]["occupied"] = False
+            # We're a dest.
+            else:
+                self._board[destination_coord]["occupied"] = True
+        # act -> farm
+        elif source_board == "action_space" and destination_board == "farmyard":
+            # We're a source.
+            if self.board_type == "action_space":
+                self._board[source_coord]["occupied"] = False
+            # We're a dest.
+            else:
+                self._board[destination_coord]["occupied"] = True
         else:
-            return
+            # Invalid move path.
+            raise ValueError("Illegal move of 'person' requested.")
 
     def _move_stable(
             self,
             destination_board: Location,
             destination_coord: Coordinate,
-            source_board: Location,
-            source_coord: Coordinate
+            source_board: Location
         ) -> None:
         """Moves 'stable' according to game rules."""
-        # Decide if addition, removal, or no action is required.
-        if source_board == self.board_type:
-            pass
-        elif destination_board == self.board_type:
-            pass
+        # Decide if move path is valid & perform source/dest. actions as needed.
+        # inv -> farm
+        if source_board == "inventory" and destination_board == "farmyard":
+            if self.board_type == "farmyard":
+                # Can only be dest. board.
+                self._board[destination_coord]["stabled"] = True
+            else:
+                pass # No effect if action space as not involved here.
         else:
-            return
+            # All other move paths invalid.
+            raise ValueError("Only valid move of stable is from inventory to farmyard.")
 
     def _move_animals(
             self,
+            goods_type: GoodsType,
             num_goods: int,
             destination_board: Location,
             destination_coord: Coordinate,
@@ -249,33 +252,141 @@ class BaseBoard(metaclass=ABCMeta):
             source_coord: Coordinate
         ) -> None:
         """Moves animals according to game rules."""
-        # Decide if addition, removal, or no action is required.
-        if source_board == self.board_type:
-            pass
-        elif destination_board == self.board_type:
-            pass
+        # Decide if move path is valid & perform source/dest. actions as needed.
+        # act -> farm
+        if source_board == "action_space" and destination_board == "farmyard":
+            # We're dest.
+            if self.board_type == "farmyard":
+                # Check if valid space type.
+                if (self._board[destination_coord]["space_type"]
+                    not in {"wood_room", "clay_room", "stone_room", "pasture", "unused"}):
+                    raise ValueError(f"Not valid space type to move {goods_type!r} to.")
+                # Conditions for rooms.
+                if (self._board[destination_coord]["space_type"]
+                    in {"wood_room", "clay_room", "stone_room"}):
+                    if self._board[destination_coord]["num_present"] != 0 or num_goods != 1:
+                        raise ValueError("Can only have 1 pet.")
+                    # Put pet in room.
+                    self._board[destination_coord]["goods_type"] = goods_type
+                    self._board[destination_coord]["num_present"] = num_goods
+                # Conditions for unused.
+                elif self._board[destination_coord]["space_type"] == "unused":
+                    if not self._board[destination_coord]["stabled"]:
+                        raise ValueError(
+                            f"Destination space not stabled & unused, cannot place {goods_type!r}."
+                        )
+                    if self._board[destination_coord]["num_present"] != 0 or num_goods != 1:
+                        raise ValueError(
+                            "Cannot place more than 1 animal in unfenced space with stable."
+                        )
+                    self._board[destination_coord]["goods_type"] = goods_type
+                    self._board[destination_coord]["num_present"] = num_goods
+                # Conditions for pasture.
+                elif self._board[destination_coord]["space_type"] == "pasture":
+                    # Check type.
+                    if (self._board[destination_coord]["goods_type"] is not None
+                        and self._board[destination_coord]["goods_type"] != goods_type):
+                        raise ValueError("Animals in same pasture need to be same type.")
+                    # Check number.
+                    space_capacity = self._check_pasture_size_and_stables()
+                    if self._board[destination_coord]["num_present"] + num_goods > space_capacity:
+                        raise ValueError("Move requested would break capacity of pasture.")
+                    self._board[destination_coord]["goods_type"] = goods_type
+                    self._board[destination_coord]["num_present"] += num_goods
+            else:
+                # We're a source.
+                if goods_type != self._board[source_coord]["goods_type"]:
+                    raise ValueError("Requested goods do not match source space goods type.")
+                if num_goods != self._board[source_coord]["num_present"]:
+                    raise ValueError("Must take all goods on accumulate space.")
+                self._board[source_coord]["num_present"] -= num_goods
+        # farm -> farm
+        if source_board == "farmyard" and destination_board == "farmyard":
+            if self.board_type == "farmyard":
+                # Check both valid space types.
+                if (self._board[source_coord]["space_type"]
+                    not in {"wood_room", "clay_room", "stone_room", "pasture", "unused"}):
+                    raise ValueError("Not valid source space type.")
+                if (self._board[destination_coord]["space_type"]
+                    not in {"wood_room", "clay_room", "stone_room", "pasture", "unused"}):
+                    raise ValueError("Not valid destination space type.")
+                # room/unused -> pasture
+                if (self._board[source_coord]["space_type"] in
+                    {"wood_room", "clay_room", "stone_room", "unused"}
+                    and self._board[destination_coord]["space_type"] == "pasture"):
+                    # Check source num.
+                    if num_goods != 1:
+                        raise ValueError("Can only source max 1 animal from room or stable space.")
+                    # Check dest. type.
+                    if (self._board[destination_coord]["goods_type"] is not None
+                        and self._board[destination_coord]["goods_type"] != goods_type):
+                        raise ValueError("Animals in same pasture need to be same type.")
+                    # Check dest. value.
+                    space_capacity = self._check_pasture_size_and_stables()
+                    if self._board[destination_coord]["num_present"] + num_goods > space_capacity:
+                        raise ValueError("Move requested would break capacity of pasture.")
+                    self._board[destination_coord]["goods_type"] = goods_type
+                    self._board[destination_coord]["num_present"] += num_goods
+                # room/pasture -> unused
+                elif (self._board[source_coord]["space_type"] in
+                    {"wood_room", "clay_room", "stone_room", "pasture"}
+                    and self._board[destination_coord]["space_type"] == "unused"):
+                    if not self._board[destination_coord]["stabled"]:
+                        raise ValueError(
+                            f"Destination space not stabled & unused, cannot place {goods_type!r}."
+                        )
+                    if self._board[destination_coord]["num_present"] != 0 or num_goods != 1:
+                        raise ValueError(
+                            "Cannot place more than 1 animal in unfenced space with stable."
+                        )
+                    self._board[destination_coord]["goods_type"] = goods_type
+                    self._board[destination_coord]["num_present"] = num_goods
+                # unused/pasture -> room
+                elif (self._board[source_coord]["space_type"] in {"pasture", "unused"}
+                    and self._board[destination_coord]["space_type"]
+                    in {"wood_room", "clay_room", "stone_room"}):
+                    if self._board[destination_coord]["num_present"] != 0 or num_goods != 1:
+                        raise ValueError("Can only have 1 pet.")
+                    # Put pet in room.
+                    self._board[destination_coord]["goods_type"] = goods_type
+                    self._board[destination_coord]["num_present"] = num_goods
+# FIXME! decide if needed to have pasture -> pasture
+                else:
+                    raise ValueError("Incompatible source & destination space types.")
+            else:
+                pass # No action possible.
         else:
-            return
+            # All other move paths invalid.
+            raise ValueError(f"Illegal move of {goods_type!r} requested.")
 
     def _move_building_material(
             self,
+            goods_type: GoodsType,
             num_goods: int,
             destination_board: Location,
-            destination_coord: Coordinate,
             source_board: Location,
             source_coord: Coordinate
         ) -> None:
         """Moves building materials according to game rules."""
-        # Decide if addition, removal, or no action is required.
-        if source_board == self.board_type:
-            pass
-        elif destination_board == self.board_type:
-            pass
+        # Decide if move path is valid & perform source/dest. actions as needed.
+        # act -> inv
+        if source_board == "action_space" and destination_board == "inventory":
+            # We're source.
+            if self.board_type == "action_space":
+                if goods_type != self._board[source_coord]["goods_type"]:
+                    raise ValueError("Requested goods do not match source space goods type.")
+                if num_goods != self._board[source_coord]["num_present"]:
+                    raise ValueError("Must take all goods on accumulate space.")
+                self._board[source_coord]["num_present"] -= num_goods
+            else:
+                pass # No action possible.
         else:
-            return
+            # All other move paths invalid.
+            raise ValueError(f"Illegal move of {goods_type!r} requested.")
 
     def _move_crops(
             self,
+            goods_type: GoodsType,
             num_goods: int,
             destination_board: Location,
             destination_coord: Coordinate,
@@ -283,31 +394,62 @@ class BaseBoard(metaclass=ABCMeta):
             source_coord: Coordinate
         ) -> None:
         """Moves crops according to game rules."""
-        # Decide if addition, removal, or no action is required.
-        if source_board == self.board_type:
-            pass
-        elif destination_board == self.board_type:
-            pass
+        # Decide if move path is valid & perform source/dest. actions as needed.
+        # inv -> farm
+        if source_board == "inventory" and destination_board == "farmyard":
+            # Must be dest. (and taking "sow" action.)
+            if self.board_type == "farmyard":
+                # Check space type.
+                if self._board[destination_coord]["space_type"] != "field":
+                    raise ValueError("Can only place crops on 'field' spaces.")
+                if self._board[destination_coord]["goods_type"] is not None:
+                    raise ValueError("Can only place crops in empty field.")
+                if self._board[destination_coord]["num_present"] != 0 or num_goods != 1:
+                    raise ValueError(f"Can only place 1 {goods_type!r} in field at a time.")
+                self._board[destination_coord]["goods_type"] = goods_type
+                self._board[destination_coord]["num_present"] += num_goods + 2
+            else:
+                pass # No other actions possible.
+        # farm -> inv
+        if source_board == "farmyard" and destination_board == "inventory":
+            # Must be source. (and taking "harvest_crops" action.)
+            if self.board_type == "farmyard":
+                if self._board[source_coord]["space_type"] != "field":
+                    raise ValueError("Can only get crops from 'field' farmyard spaces.")
+                if self._board[source_coord]["goods_type"] is None:
+                    raise ValueError("Cannot get crops from empty field.")
+                if self._board[source_coord]["num_present"] == 0 or num_goods != 1:
+                    raise ValueError(f"Can only get 1 {goods_type!r} from field at a time.")
+                if self._board[source_coord]["num_present"] == 1:
+                    self._board[source_coord]["goods_type"] = None
+                self._board[source_coord]["num_present"] -= num_goods
+            else:
+                pass # No other actions possible.
+# FIXME! Make farm -> farm case if time for all minor imp cards.
         else:
-            return
+            # All other move paths invalid.
+            raise ValueError(f"Illegal move of {goods_type!r} requested.")
 
     def _move_food(
             self,
             num_goods: int,
             destination_board: Location,
-            destination_coord: Coordinate,
             source_board: Location,
             source_coord: Coordinate
         ) -> None:
         """Moves food according to game rules."""
-        # Decide if addition, removal, or no action is required.
-        if source_board == self.board_type:
-            pass
-        elif destination_board == self.board_type:
-            pass
+        # Decide if move path is valid & perform source/dest. actions as needed.
+        # act -> inv
+        if source_board == "action_space" and destination_board == "inventory":
+            # We're source.
+            if self.board_type == "action_space":
+                if self._board[source_coord]["goods_type"] != "food":
+                    raise ValueError("Requested food does not match source space goods type.")
+                if num_goods != self._board[source_coord]["num_present"]:
+                    raise ValueError("Must take all food on accumulate space.")
+                self._board[source_coord]["num_present"] -= num_goods
+            else:
+                pass # No other actions possible.
         else:
-            return
-
-    def _change_space_data(self, new_space_data: SpaceData) -> None:
-        """Changes/updates space info from player move action."""
-        self._board[new_space_data["coordinate"]] = new_space_data
+            # All other move paths invalid.
+            raise ValueError("Illegal move of 'food' requested.")

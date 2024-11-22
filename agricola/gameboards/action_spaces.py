@@ -160,6 +160,7 @@ class ActionSpaces(BaseBoard):
             "coordinate": csv_line[1]["coord"],
             "space_type": "action",
             "occupied": False,
+            "child": False,
             "stabled": False,
             "accumulate": csv_line[1]["accum"],
             "accum_number": csv_line[1]["num_good"],

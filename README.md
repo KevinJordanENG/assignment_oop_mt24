@@ -34,3 +34,7 @@ This file contains listed and described features of the implementation such as a
 - It was difficult to confirm if 2 food per person is consumed at the end of *each* round or exclusively on *harvest* rounds. It seemed most well described in the harvest sections so food consumption was only implemented at the end of harvest rounds.
 - The main `Game` instance defines methods that control the state of the game enabling the functionality required for each of the games phases. If some direct object methods are tried to be invoked directly before properly advancing the game state they will fail until the proper game state has been reached.
     - An example is the `game.player.two.place_player()` method which will error unless it is the proper player's turn specifically within the 'round work' phase.
+- In functions deemed equally likely to be executed by either `game` or `player` the same functions are available to provide UI/UX simplicity.
+    - E.g. `game.player.one.move_item(move_request)` is the same as `game.move_item(move_request, player_id=1)`
+- The fundamental logic/valid move checking is implemented in the board ABC '_move...' functions.
+    - These functions are longer than normal as the if/else/error tree of validating move paths, object type, and space type are extensive.

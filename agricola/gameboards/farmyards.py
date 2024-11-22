@@ -112,6 +112,7 @@ class Farmyard(BaseBoard):
                 "coordinate": j,
                 "space_type": cast(SpaceType, space_type),
                 "occupied": False,
+                "child": False,
                 "stabled": False,
                 "accumulate": False,
                 "accum_number": 0,

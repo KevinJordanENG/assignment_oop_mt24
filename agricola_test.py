@@ -13,4 +13,19 @@ game1.start_next_round()
 
 game1.play_next_player_work_actions()
 
+game1.place_person_on_action_space((1,2),(1,0), player_id=1)
+
+move_request = game1.bundle_move_request(
+    goods_type="wood",
+    num_goods=3,
+    destination_board="inventory",
+    destination_coord=(-1,-1),
+    source_board="action_space",
+    source_coord=(1,2)
+)
+
+game1.player.one.move_items(move_request)
+
+print(game1.player.one.supply.count("wood"))
+
 print()
