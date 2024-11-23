@@ -3,11 +3,12 @@ Module providing the state machine(s) for game turn based logic.
 """
 from __future__ import annotations
 from contextvars import ContextVar
-from typing import Self
+from typing import Self, TYPE_CHECKING
 
 from .type_defs import GameStates
 from .gameboards import ActionSpaces
-from .players import Players
+if TYPE_CHECKING:
+    from .players import Players
 
 
 class StateError(Exception):
@@ -46,13 +47,9 @@ class PlayerActionServer:
         elif self.__game_state.STATE.get() == "running_work_player_3":
             self.__game_state.STATE.set("running_work_player_4")
 
-    def _make_decision(self) -> None:
-        """"""
-
-# TODO: Decide which order the ^ & \/ should take
-
-    def _take_action(self) -> None:
-        """"""
+    def set_current_player_decision(self) -> None:
+        """Sets state to decision mode if current player decision is required."""
+        self.__game_state.STATE.set("current_player_decision")
 
 
 # class TurnServer:

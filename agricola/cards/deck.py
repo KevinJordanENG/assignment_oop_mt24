@@ -109,7 +109,11 @@ FuncNoEval = set([
     "PLAYER_W_MOST_ROOMS",
     "EACH_OCCUP_AFTER_THIS",
     "EACH_PASTURE_W_1_AND_SPACE_FOR_3_MORE",
-    "PER_UNFENCED_STABLE"
+    "PER_UNFENCED_STABLE",
+    "GET_ANIMAL",
+    "MEAT_MRKT_USE+GET_ANIMAL",
+    "GET_ANIMAL+BOAR_BREED_FUTURE_12",
+    "GET_GOODS||GET_ANIMAL"
 ])
 
 NoEvalTokens: set[str] = set(get_args(SpaceType)) | FuncNoEval
@@ -161,6 +165,13 @@ class Deck:
             seven_cards.add_card_to_deck(key, self.__cards[key])
             self.__cards.pop(key)
         return seven_cards
+
+    def is_in_deck(self, card_name: CardDictKeys) -> bool:
+        """Returns bool if card of specified key exists in deck or not."""
+        for key in self.__cards:
+            if key == card_name:
+                return True
+        return False
 
     def get_next_action_space(self) -> None:
         """"""

@@ -1,34 +1,34 @@
 key,stage,coord,accum,goods_type,num_good,func,costs,output
-"farm_expansion",0,"(0,1)",False,None,0,"BUILD_ROOMS_AND_OR_STABLES","{'wood': ((5,'wood'),(2,'reed')), 'clay': ((5,'clay'),(2,'reed')), 'stone': ((5,'stone'),(2,'reed')), 'stable': (2,'wood')}","{'wood': 'wood_room', 'clay': 'clay_room', 'stone': 'stone_room', 'stable': (1,'stable')}"
+"farm_expansion",0,"(0,1)",False,None,0,"self.build_rooms_and_or_stables()","{'wood_room': ((5,'wood'),(2,'reed')), 'clay_room': ((5,'clay'),(2,'reed')), 'stone_room': ((5,'stone'),(2,'reed')), 'stable': (2,'wood')}","{'wood_room': 'wood_room', 'clay_room': 'clay_room', 'stone_room': 'stone_room', 'stable': (1,'stable')}"
 "meeting_place",0,"(1,1)",False,None,0,"TAKE_START_PLAYER_TOKEN+PLAY_MINOR_IMPR",None,None
-"grain_seeds",0,"(2,1)",False,"grain",1,"GET_GOODS",None,None
+"grain_seeds",0,"(2,1)",False,None,0,"self.get_goods(action='grain_seeds')",None,"(1,'grain')"
 "farmland",0,"(3,1)",False,None,0,"PLOW",None,"field"
 "lessons",0,"(4,1)",False,None,0,"PLAY_OCCUP","{'first': (0,'food'), 'second': (1,'food')}",None
-"day_laborer",0,"(5,1)",False,"food",2,"GET_GOODS",None,None
-"forest",0,"(1,2)",True,"wood",3,"GET_GOODS",None,None
-"clay_pit",0,"(2,2)",True,"clay",1,"GET_GOODS",None,None
-"reed_bank",0,"(3,2)",True,"reed",1,"GET_GOODS",None,None
-"fishing",0,"(4,2)",True,"food",1,"GET_GOODS",None,None
+"day_laborer",0,"(5,1)",False,None,0,"self.get_goods(action='day_laborer')",None,"(2,'food')"
+"forest",0,"(1,2)",True,"wood",3,"self.get_goods(action='forest')",None,None
+"clay_pit",0,"(2,2)",True,"clay",1,"self.get_goods(action='clay_pit')",None,None
+"reed_bank",0,"(3,2)",True,"reed",1,"self.get_goods(action='reed_bank')",None,None
+"fishing",0,"(4,2)",True,"food",1,"self.get_goods(action='fishing')",None,None
 "major_improvement",1,"(-1,-1)",False,None,0,"PLAY_MINOR_IMPR||PLAY_MAJOR_IMPR",None,None
 "fencing",1,"(-1,-1)",False,None,0,"BUILD_FENCES","(1,'wood')","(1,'fence')"
 "grain_utilization",1,"(-1,-1)",False,None,0,"SOW||BAKE_BREAD","{'sow': {(1,'grain'), (1,'vegetable')}, 'bake_bread': (1,'grain')}","{'sow': None, 'bake_bread': (1,'food')}"
 "sheep_market",1,"(-1,-1)",True,"sheep",1,"GET_ANIMAL",None,"{(1,'sheep'), (1,'food')}"
 "basic_wish_for_children",2,"(-1,-1)",False,None,0,"HAVE_KIDS+PLAY_MINOR_IMPR",None,"(1,'person')"
 "house_redevelopment",2,"(-1,-1)",False,None,0,"RENOVATION+PLAY_MAJOR_IMPR||PLAY_MINOR_IMPR","{'clay': ((1,'reed'),(1,'clay')), 'stone': ((1,'reed'),(1,'stone'))}","{'clay': 'clay_room', 'stone': 'stone_room'}"
-"western_quarry",2,"(-1,-1)",True,"stone",1,"GET_GOODS",None,None
-"vegetable_seeds",3,"(-1,-1)",False,"vegetable",1,"GET_GOODS",None,None
+"western_quarry",2,"(-1,-1)",True,"stone",1,"self.get_goods(action='western_quarry')",None,None
+"vegetable_seeds",3,"(-1,-1)",False,None,0,"self.get_goods(action='vegetable_seeds')",None,"(1,'vegetable')"
 "pig_market",3,"(-1,-1)",True,"boar",1,"GET_ANIMAL",None,"{(1,'boar'), (1,'food')}"
 "cattle_market",4,"(-1,-1)",True,"cattle",1,"GET_ANIMAL",None,"{(1,'cattle'), (1,'food')}"
-"eastern_quarry",4,"(-1,-1)",True,"stone",1,"GET_GOODS",None,None
+"eastern_quarry",4,"(-1,-1)",True,"stone",1,"self.get_goods(action='eastern_quarry')",None,None
 "urgent_wish_for_children",5,"(-1,-1)",False,None,0,"HAVE_KIDS",None,"(1,'person')"
 "cultivation",5,"(-1,-1)",False,None,0,"PLOW+SOW","{'plow': None, 'sow': {(1,'grain'), (1,'vegetable')}}","{'plow': 'field', 'sow': None}"
 "farm_redevelopment",6,"(0,8)",False,None,0,"RENOVATION+BUILD_FENCES","{'clay': ((1,'reed'),(1,'clay')), 'stone': ((1,'reed'),(1,'stone')), 'wood': (1,'wood')}","{'clay': 'clay_room', 'stone': 'stone_room', 'wood': (1,'fence')}"
-"copse",0,"(0,0)",True,"wood",1,"GET_GOODS",None,None
-"grove",0,"(1,0)",True,"wood",2,"GET_GOODS",None,None
+"copse",0,"(0,0)",True,"wood",1,"self.get_goods(action='copse')",None,None
+"grove",0,"(1,0)",True,"wood",2,"self.get_goods(action='grove')",None,None
 "3_resource_market",0,"(2,0)",False,None,0,"GET_MARKET_GOODS",None,"{'reed': ((1,'reed'),(1,'food')), 'stone': ((1,'stone'),(1,'food'))}"
 "4_resource_market",0,"(2,0)",False,None,0,"GET_MARKET_GOODS",None,"((1,'reed'),(1,'stone'),(1,'food'))"
-"3_hollow",0,"(3,0)",True,"clay",1,"GET_GOODS",None,None
-"4_hollow",0,"(3,0)",True,"clay",2,"GET_GOODS",None,None
+"3_hollow",0,"(3,0)",True,"clay",1,"self.get_goods(action='3_hollow')",None,None
+"4_hollow",0,"(3,0)",True,"clay",2,"self.get_goods(action='4_hollow')",None,None
 "3_lessons",0,"(4,0)",False,None,0,"PLAY_OCCUP","(2,'food')",None
 "4_lessons",0,"(4,0)",False,None,0,"PLAY_OCCUP","{'one_and_two': (1,'food'), 'three_plus': (2,'food')}",None
-"traveling_players",0,"(5,0)",True,"food",1,"GET_GOODS",None,None
+"traveling_players",0,"(5,0)",True,"food",1,"self.get_goods(action='traveling_players')",None,None

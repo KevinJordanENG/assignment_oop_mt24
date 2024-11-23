@@ -57,12 +57,39 @@ class Farmyard(BaseBoard):
     def build_fence(self) -> None:
         """Performs build fence action. Can only move fence from inventory to farmyard."""
 
-    def change_space_type(self, coord: Coordinate, space_type: SpaceType) -> None:
+    def change_space_type(self, space_type: SpaceType, coord: Coordinate) -> None:
         """Changes space type if request is valid/allowed."""
-# TODO: Error checking for valid space change reqs.
+        self._board[coord]["space_type"] = space_type
 
-    def _check_adjacency(self) -> None:
-        """"""
+    def check_space_change_validity(self, space_type: SpaceType, coord: Coordinate) -> bool:
+        """Returns bool if requested new space type is valid at specified coord."""
+        # Handle room requests.
+        if space_type in {"wood_room", "clay_room", "stone_room"}:
+            valid_adj = self._check_adjacency(space_type, coord)
+            valid_current = (self._board[coord]["space_type"] == "unused"
+                             and not self._board[coord]["stabled"])
+            return valid_adj and valid_current
+# FIXME! add logic for other change requests (field)
+        return False
+
+    def get_house_type(self) -> SpaceType:
+        """Checks & returns house type."""
+        house_type = None
+        for space_data in self._board.values():
+            if space_data["space_type"] in {"wood_room", "clay_room", "stone_room"}:
+                house_type = space_data["space_type"]
+        if house_type is None:
+            raise ValueError("Could not determine house type.")
+        return house_type
+
+    def _check_adjacency(self, space_type: SpaceType, coord: Coordinate) -> bool:
+        """Checks that all adjacent spaces are of valid type for request."""
+        row, col = coord[0], coord[1]
+        up = False if row-1 < 0 else (self._board[(row-1,col)]["space_type"] == space_type)
+        down = False if row+1 > 2 else (self._board[(row+1,col)]["space_type"] == space_type)
+        left = False if col-1 < 0 else (self._board[(row,col-1)]["space_type"] == space_type)
+        right = False if col+1 > 4 else (self._board[(row,col+1)]["space_type"] == space_type)
+        return up or down or left or right
 
     def _init_board_spaces(self) -> None:
         """Sets the valid spaces for a farmyard."""

@@ -19,10 +19,10 @@ key,num_players,func,func_cost,func_output,points,goods_req
 "braggart",3,None,None,None,"(2,3,4,5,7,9)","('COUNT_IMPRVMTS', (5,6,7,8,9,10))"
 "harpooner",3,"USE_FISHING+EXCHANGE","(1,'wood')","(('PER_PERSON','food'),(1,'reed'))",0,None
 "stonecutter",3,"DECREASE_IMPR_COST",None,None,0,None
-"animal_dealer",3,"MEAT_MRKT_USE+GET_GOODS","(1,'food')","{(1,'sheep'),(1,'boar'),(1,'cattle')}",0,None
+"animal_dealer",3,"MEAT_MRKT_USE+GET_ANIMAL","(1,'food')","{(1,'sheep'),(1,'boar'),(1,'cattle')}",0,None
 "conjurer",4,"EXTRA+USE_TRAVELING_PLAYERS",None,"((1,'wood'),(1,'grain'))",0,None
 "lutenist",4,"GET_WHEN_OTHERS_USE_TRAVELING_PLAYERS+EXCHANGE","{'base': None, 'exc': (2,'food')}","{'base':((1,'food'),(1,'wood')), 'exc':(1,'vegetable')}",0,None
-"pig_breeder",4,"GET_GOODS+BOAR_BREED_FUTURE_12",None,"(1,'boar')",0,None
+"pig_breeder",4,"GET_ANIMAL+BOAR_BREED_FUTURE_12",None,"(1,'boar')",0,None
 "cottager",1,"BUILD_ROOM_OR_RENO_WHN_PLY_DAY_LABORER",None,None,0,None
 "groom",1,"GET_GOODS+IF_STONE_HOUSE+BUILD_STABLE_1_WOOD",None,"(1,'wood')",0,None
 "assistant_tiller",1,"USE_DAY_LABORER+PLOW",None,"field",0,None
@@ -30,7 +30,7 @@ key,num_players,func,func_cost,func_output,points,goods_req
 "scholar",1,"IF_STONE_HOUSE+PLAY_OCCUP_OR_MINOR","(1,'food')",None,0,None
 "organic_farmer",1,None,None,None,1,"EACH_PASTURE_W_1_AND_SPACE_FOR_3_MORE"
 "tutor",1,None,None,None,1,"EACH_OCCUP_AFTER_THIS"
-"consultant",1,"GET_GOODS",None,"{1:(2,'grain'),2:(3,'clay'),3:(2,'reed'),4:(2,'sheep')}",0,None
+"consultant",1,"GET_GOODS||GET_ANIMAL",None,"{1:(2,'grain'),2:(3,'clay'),3:(2,'reed'),4:(2,'sheep')}",0,None
 "sheep_walker",1,"EXCHANGE","(1,'sheep')","{(1,'boar'),(1,'vegetable'),(1,'stone')}",0,None
 "manservant",1,"IF_STONE_HOUSE+GET_3_FOOD_REMAIN_RNDS",None,"(3,'food')",0,None
 "oven_firing_boy",1,"USE_WOOD_ACCUM+BAKE_BREAD","(1,'grain')","(1,'food')",0,None

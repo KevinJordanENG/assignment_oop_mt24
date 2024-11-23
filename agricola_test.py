@@ -13,7 +13,9 @@ game1.start_next_round()
 
 game1.play_next_player_work_actions()
 
-game1.place_person_on_action_space((1,2),(1,0), player_id=1)
+game1.place_person_on_action_space((0,1),(1,0), player_id=1)
+
+game1.player.one.decision(["stable"])
 
 move_request = game1.bundle_move_request(
     goods_type="wood",

@@ -83,6 +83,12 @@ class Supply:
     def build_fence(self) -> None:
         """Builds fence / moves it from inventory to farmyard."""
 
+    def pay(self) -> None:
+        """
+        Routine to 'pay' for game actions, removing items from inventory if enough
+        or raising an error if not enough resources.
+        """
+
     def move(
             self,
             goods_type: GoodsType,
@@ -173,7 +179,7 @@ class Supply:
                 else:
                     raise ValueError("Illegal move requested.")
             # inv -> farm
-            if source_board == "inventory" and destination_board == "farmyard":
+            elif source_board == "inventory" and destination_board == "farmyard":
                 fetch = self._get_general_good(goods_type, source_board, source_coord)
                 if fetch is None:
                     raise ValueError("Good not found at requested coordinates.")
@@ -186,14 +192,14 @@ class Supply:
             # Some redundant error checking of board to board data transfer,
             # even tho handled by SpaceData.
             # act -> farm
-            if source_board == "action_space" and destination_board == "farmyard":
+            elif source_board == "action_space" and destination_board == "farmyard":
                 # Check if appropriate goods type.
                 if goods_type in {"sheep", "boar", "cattle"}:
                     pass # Goods info handled via SpaceData
                 else:
                     raise ValueError("Illegal move requested.")
             # farm -> farm
-            if source_board == "farmyard" and destination_board == "farmyard":
+            elif source_board == "farmyard" and destination_board == "farmyard":
                 if goods_type in {"sheep", "boar", "cattle", "grain", "vegetable"}:
                     pass # Goods info handled via SpaceData
                 else:

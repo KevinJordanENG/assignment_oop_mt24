@@ -115,7 +115,7 @@ class BaseBoard(metaclass=ABCMeta):
             raise KeyError("Coordinate is not valid on this board.")
         return self._board[coord]["num_present"]
 
-    def get_action(self, coord: Coordinate) -> Action | None:
+    def is_action(self, coord: Coordinate) -> Action | None:
         """Gets action for given coords, or None if not action space."""
         if coord not in self._valid_spaces:
             raise KeyError("Coordinate is not valid on this board.")

@@ -42,11 +42,9 @@ ROUND_COORDS: Final[list[Coordinate]] = [
 
 # TODO: change these to real functions once they exist
 FuncNoEval = set([
-    "BUILD_ROOMS_AND_OR_STABLES",
     "TAKE_START_PLAYER_TOKEN+PLAY_MINOR_IMPR",
     "PLOW",
     "PLAY_OCCUP",
-    "GET_GOODS",    # TODO: -----------------------> Only 2 wood is accum on forest for 1 p game
     "PLAY_MINOR_IMPR||PLAY_MAJOR_IMPR",
     "BUILD_FENCES",
     "SOW||BAKE_BREAD",
@@ -56,7 +54,22 @@ FuncNoEval = set([
     "HAVE_KIDS",
     "PLOW+SOW",
     "RENOVATION+BUILD_FENCES",
-    "GET_MARKET_GOODS"
+    "GET_MARKET_GOODS",
+    "self.get_goods(action='forest')",
+    "self.get_goods(action='grain_seeds')",
+    "self.get_goods(action='day_laborer')",
+    "self.get_goods(action='clay_pit')",
+    "self.get_goods(action='reed_bank')",
+    "self.get_goods(action='fishing')",
+    "self.get_goods(action='western_quarry')",
+    "self.get_goods(action='vegetable_seeds')",
+    "self.get_goods(action='eastern_quarry')",
+    "self.get_goods(action='copse')",
+    "self.get_goods(action='grove')",
+    "self.get_goods(action='3_hollow')",
+    "self.get_goods(action='4_hollow')",
+    "self.get_goods(action='traveling_players')",
+    "self.build_rooms_and_or_stables()"
 ])
 """Set of functions used to call action space effects, stored in dict as str."""
 
@@ -81,7 +94,26 @@ class ActionSpaces(BaseBoard):
         # Initialize starting spaces config depending on num_players.
         self._init_board_spaces(num_players)
         # Populate initial spaces.
-        self._populate_spaces(path)
+        self._populate_spaces(num_players, path)
+
+    def get_action_function(self, action: Action) -> str:
+        """Gets the function (as str) associated with action key."""
+        return str(self.__csv_data[action]["func"])
+
+    def get_action_func_output(self, action: Action) -> Any: # Any used here as output is varied.
+        """Gets the output from specified action key."""
+        return self.__csv_data[action]["output"]
+
+    def get_action_func_cost(self, action: Action) -> Any: # Any used here as cost is varied.
+        """Gets the cost of specified action key."""
+        return self.__csv_data[action]["costs"]
+
+    def get_space_data_from_action(self, action: Action) -> tuple[Coordinate, SpaceData] | None:
+        """Returns space data for requested action key."""
+        for key, value in self._board.items():
+            if value["action"] == action:
+                return (key, value)
+        return None
 
     def add_action_space(self, round_num: int, stage: int) -> None:
         """Public method to add action space."""
@@ -104,13 +136,13 @@ class ActionSpaces(BaseBoard):
         elif num_players == 4:
             self._valid_spaces = START_COORDS["1_and_2_player"] | START_COORDS["4_player_adtl"]
 
-    def _populate_spaces(self, path: str) -> None:
+    def _populate_spaces(self, num_players: int, path: str) -> None:
         """Populates gameboard initial coordinates with SpaceData."""
         self.__csv_data = {}
         self._load_csv(path)
         for space in self._valid_spaces:
             line = self._fetch_csv_line(round_num=0, space=space)
-            self._board[space] = self._bundle_space_data(line)
+            self._board[space] = self._bundle_space_data(line, num_players)
 
     def _find_in_csv_data(self, key: str, value: Any) -> ActionCSVLine:
         """Iterates over all action items looking in their dicts for specified k/v pair."""
@@ -154,8 +186,10 @@ class ActionSpaces(BaseBoard):
             "Cannot request action space by both coordinate and stage at same time."
         )
 
-    def _bundle_space_data(self, csv_line: ActionCSVLine) -> SpaceData:
+    def _bundle_space_data(self, csv_line: ActionCSVLine, num_players: int = -1) -> SpaceData:
         """Adds action space (once per round) from remaining actions per stage."""
+        if csv_line[0] == "forest" and num_players == 1:
+            csv_line[1]["num_good"] = 2
         space_data: SpaceData = {
             "coordinate": csv_line[1]["coord"],
             "space_type": "action",

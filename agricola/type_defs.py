@@ -211,6 +211,7 @@ GameStates = Literal[
     "running_work_player_1", # player turn logic
     "running_work_player_2",
     "running_work_player_3",
-    "running_work_player_4"
+    "running_work_player_4",
+    "current_player_decision" # if action space / occup / improvement requires a decision from player
 ]
 """Type alias for all various game states."""

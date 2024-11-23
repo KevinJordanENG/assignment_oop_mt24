@@ -152,6 +152,7 @@ class Game:
 
     def move_item(self, move_request: MoveRequest, *, player_id: int) -> None:
         """Unified move routine from 'game' directly that changes all necessary data."""
+# TODO: Add valid states
         self.__player.players_tup[player_id-1].move_items(move_request)
 
     def quit_game_early(self) -> None:
@@ -190,6 +191,7 @@ class Game:
             source_coord: tuple[int,int]
         ) -> MoveRequest:
         """Helper function that bundles/casts to TypedDict needed for requesting item moves."""
+        # Helper func so valid in any state as no modification to game data.
         move_request: MoveRequest = {
             "goods_type": cast(GoodsType, goods_type),
             "num_goods": num_goods,
@@ -267,6 +269,7 @@ class Game:
             players_list.append(
                 Player(
                     self,
+                    self.__state,
                     set_of_seven_minor,
                     set_of_seven_occup,
                     num_players,

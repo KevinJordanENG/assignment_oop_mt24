@@ -1,7 +1,7 @@
 key,prereq,pass_left,build_cost,func,func_cost,func_output,points,goods_req
 "shifting_cultivation",None,True,"(2,'food')","PLOW",None,"field",0,None
 "clay_embankment",None,True,"(1,'food')","GET_GOODS",None,"(1,'clay')",0,None
-"young_animal_market",None,True,"(1,'sheep')","GET_GOODS",None,"(1,'cattle')",0,None
+"young_animal_market",None,True,"(1,'sheep')","GET_ANIMAL",None,"(1,'cattle')",0,None
 "drinking_trough",None,False,"(1,'clay')","INCREASE_PASTURE_CAPACITY",None,None,0,None
 "rammed_clay",None,False,None,"ADD_CLAY_TO_FENCE_BUILD_MAT",None,"(1,'clay')",0,None
 "handplow",None,False,"(1,'wood')","PLOW_FUTURE",None,"field",0,None
