@@ -21,6 +21,7 @@ class MajorImprovement(Card):
         self._name = name
         self._attributes = attributes
         self._func = attributes["func"]
+        self._played = False
         return self
 
     @property

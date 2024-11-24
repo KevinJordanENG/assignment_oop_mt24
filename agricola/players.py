@@ -2,13 +2,13 @@
 Module containing Player class for controlling agricola game players.
 """
 from __future__ import annotations
-from typing import Self, TYPE_CHECKING
+from typing import Self, TYPE_CHECKING, cast
 
 from .goods import Supply
 from .gameboards import Farmyard, MoveRequest
 from .cards import Deck
 from .rounds_server import GameState
-from .type_defs import GoodsType, Coordinate, Action, SpaceType, Location
+from .type_defs import GoodsType, Coordinate, Action, SpaceType, MinorImproveNames, OccupationNames, MajorImproveNames
 if TYPE_CHECKING:
     from .game import Game
 
@@ -35,7 +35,7 @@ class Player:
                              # ^^^round_num
     __decision_func_cache: str # str version of func to be executed.
     __decision_args_cache: list[str] # list of types of args required for cached decision func.
-    __decision_initial_caller: str # FIXME! Decide if worth it or not...
+    __pending_payment: tuple[tuple[int,str], ...]
 
     def __new__(
             cls,
@@ -66,6 +66,7 @@ class Player:
         self.__has_future_goods_on_action_spaces = False
         self.__future_goods = []
         self.__decision_args_cache = []
+        self.__pending_payment = ()
         return self
 
     @property
@@ -220,29 +221,29 @@ class Player:
             pass
         return False
 
-    def get_animals(self) -> bool:
-        """Gets animals and prompts decision of where to place animals."""
-        # Check if we have a major improvement for cooking immediately.
-        if self.__player_major_imp_cards is not None:
-            # If has option to cook, return cook as decision func.
-            if (self.__player_major_imp_cards.is_in_deck("2_fireplace")
-                or self.__player_major_imp_cards.is_in_deck("3_fireplace")
-                or self.__player_major_imp_cards.is_in_deck("4_cooking_hearth")
-                or self.__player_major_imp_cards.is_in_deck("5_cooking_hearth")):
-                # FIXME!
-                self.__decision_func_cache = "self.cook()"
-                self.__decision_args_cache.append("")
-                return True
-        # If no cooking improvement return move_items as decision func.
-        # FIXME!
-        self.__decision_func_cache = "self.move_items()"
-        self.__decision_args_cache.append("")
-        return True
+    # def get_animals(self) -> bool:
+    #     """Gets animals and prompts decision of where to place animals."""
+    #     # Check if we have a major improvement for cooking immediately.
+    #     if self.__player_major_imp_cards is not None:
+    #         # If has option to cook, return cook as decision func.
+    #         if (self.__player_major_imp_cards.is_in_deck("2_fireplace")
+    #             or self.__player_major_imp_cards.is_in_deck("3_fireplace")
+    #             or self.__player_major_imp_cards.is_in_deck("4_cooking_hearth")
+    #             or self.__player_major_imp_cards.is_in_deck("5_cooking_hearth")):
+    #             # FIXME!
+    #             self.__decision_func_cache = "self.cook()"
+    #             self.__decision_args_cache.append("")
+    #             return True
+    #     # If no cooking improvement return move_items as decision func.
+    #     # FIXME!
+    #     self.__decision_func_cache = "self.move_items()"
+    #     self.__decision_args_cache.append("")
+    #     return True
 
     def build_rooms_and_or_stables(self) -> bool:
         """Function from action space allowing building of rooms &| stables."""
         self.__decision_func_cache = "self.choose_room_or_stable('{}')"
-        self.__decision_args_cache.extend(["room_or_stable"])
+        self.__decision_args_cache = ["arg0: room OR stable"]
         return True
 
     def choose_room_or_stable(self, room_or_stable: str) -> bool:
@@ -255,8 +256,8 @@ class Player:
         costs = self.__game.action_spaces.get_action_func_cost('farm_expansion')
         cost_of_interest = costs[room_or_stable]
         if room_or_stable == "stable":
-            count = self.__supply.count(cost_of_interest[1])
-            if count < cost_of_interest[0]:
+            count = self.__supply.count(cost_of_interest[0][1])
+            if count < cost_of_interest[0][0]:
 # FIXME! Decide if we should actually clear the decision caches or not.
                 # Clear func & arg caches.
                 self.__decision_func_cache = ""
@@ -264,6 +265,7 @@ class Player:
                 # If no more decisions set state to next player.
                 self.__state.round_server.player_action_server.play_next_player_actions()
                 raise ValueError("Not enough resources for requested build.")
+            self.__pending_payment = cost_of_interest
         else:
             # For sure some type of room.
             count_1 = self.__supply.count(cost_of_interest[0][1])
@@ -276,10 +278,11 @@ class Player:
                 # If no more decisions set state to next player.
                 self.__state.round_server.player_action_server.play_next_player_actions()
                 raise ValueError("Not enough resources for requested build.")
+            self.__pending_payment = cost_of_interest
         # All checks passed, now choose space to build.
         temp_str = f"self.choose_space(requested_space_type='{room_or_stable}'"
         self.__decision_func_cache = temp_str + ", destination_coord={})"
-        self.__decision_args_cache.extend(["Coordinate"])
+        self.__decision_args_cache = ["agr0: Coordinate"]
         return True
 
     def choose_space(
@@ -298,10 +301,227 @@ class Player:
             raise ValueError("Not valid space request.")
         # Passed checks, change space type.
         self.__farmyard.change_space_type(requested_space_type, destination_coord)
+        # Pay for it (if it costs anything)!
+        if len(self.__pending_payment) > 0:
+            self.__supply.pay(self.__pending_payment)
+        self.__pending_payment = () # Assign empty tuple (payment no longer pending).
         return False
 
+    def take_start_player_token(self) -> bool:
+        """Action from action spaces that makes current player 'starting'."""
+        # Set current player as start if not already.
+        if self.__starting_player:
+            pass
+        # Search for other player in game that is currently starting.
+        else:
+            for player in self.__game.player.players_tup:
+                # Set them to starting = False.
+                if player.starting_player:
+                    player.set_not_starting()
+        # Send back decision of playing minor imp. card.
+        self.__decision_func_cache = "self.play_minor_improvement('{}')"
+        self.__decision_args_cache = ["arg0: MinorImproveNames"]
+        return True
+
+    def set_not_starting(self) -> None:
+        """Sets player starting token to false."""
+        self.__starting_player = False
+
+    def play_minor_improvement(self, minor_imp: MinorImproveNames) -> bool:
+        """
+        Player gets to play a minor improvement from their hand.
+        Function takes in a MinorImproveNames, assuming it exists in hand and errors if not found.
+        Useful to query first using 'deck.is_in_deck()' to confirm presence to avoid exception.
+        """
+        # Check if card is present in hand.
+        if not self.__minor_imp_cards.is_in_deck(minor_imp):
+            raise ValueError("Card requested to be played not found in this player's hand.")
+        # If present, get prereqs if any.
+        prereqs = self.__minor_imp_cards.get_prereqs_minor_imp(minor_imp)
+        if prereqs is not None:
+            # Check prereqs if present.
+            if not self.minor_imp_prereq_check():
+                raise ValueError("Prerequisites for playing selected card not met.")
+        # Get cost to play.
+        build_cost = self.__minor_imp_cards.get_build_cost(minor_imp)
+        # Check if we can pay for it.
+        if build_cost is not None:
+            # Check build cost if present.
+            if not self._check_inventory(build_cost):
+                raise ValueError("Not enough resources to pay card build cost.")
+            # Pay build cost.
+            self.__supply.pay(build_cost)
+        # Checks passed, play card & get its func.
+        card_func = self.__minor_imp_cards.play_card(minor_imp)
+        # If no func return F -> decision will cleanup.
+        if card_func is None:
+            return False
+        decision = eval(card_func) # Otherwise eval card func.
+        # If we've gotten to the point of card func eval, the card IS played so do pass_left.
+        if self.__minor_imp_cards.cards[minor_imp].attributes["pass_left"]:
+            self.__game.player.pass_minor_imp_card_left(self.player_id, minor_imp)
+        # If func that doesn't require decision, execute & return F -> decision cleanup.
+        # If func that req dec, exec, return T to decision (assumes caches set by card func).
+        if decision:
+            return True
+        return False
+
+    def minor_imp_prereq_check(self) -> bool:
+        """Checks players items/status to confirm has needed prereqs."""
+# FIXME plz build.
+        return True
+
+    def plow(self) -> bool:
+        """Takes plow action, returns choose_space decision."""
+        string = "self.choose_space(requested_space_type='field', destination_coord={})"
+        self.__decision_func_cache = string
+        self.__decision_args_cache = ["arg0: Coordinate"]
+        return True
+
+    def choose_occupation_to_play(self, action: Action) -> bool:
+        """Decision prompt to choose an occupation card to play."""
+        # Get costs for different lessons spaces based on space & num already played.
+        count = self.__occupation_cards.count_num_played()
+        if action == "lessons":
+            costs = self.__game.action_spaces.get_action_func_cost('lessons')
+            # Decide which cost item to use.
+            if count == 0:
+                cost = costs["first"]
+            else:
+                cost = costs["second"]
+        elif action == "3_lessons":
+            costs = self.__game.action_spaces.get_action_func_cost('3_lessons')
+            cost = costs["all"]
+        elif action == "4_lessons":
+            costs = self.__game.action_spaces.get_action_func_cost('4_lessons')
+            # Decide which cost item to use.
+            if count < 2:
+                cost = costs["one_and_two"]
+            else:
+                cost = costs["three_plus"]
+        else:
+            raise ValueError("Invalid action space to play occupation from.")
+        # Check that we can pay for it.
+        if cost is not None:
+            if not self._check_inventory(cost):
+                raise ValueError("Not enough resources to pay card play cost.")
+            # Pay for it.
+            self.__supply.pay(cost)
+        # Pass on decision for which card to play.
+        self.__decision_func_cache = "self.play_occupation('{}')"
+        self.__decision_args_cache = ["arg0: OccupationNames"]
+        return True
+
+    def play_occupation(self, occup: OccupationNames) -> bool:
+        """
+        Player gets to play an occupation card from their hand.
+        Function takes in a OccupationNames, assuming it exists in hand and errors if not found.
+        Useful to query first using 'deck.is_in_deck()' to confirm presence to avoid exception.
+        """
+        # Check if card is present in hand.
+        if not self.__occupation_cards.is_in_deck(occup):
+            raise ValueError("Card requested to be played not found in this player's hand.")
+        # Checks passed, play card & get its func.
+        card_func = self.__occupation_cards.play_card(occup)
+        # If no func return F -> decision will cleanup.
+        if card_func is None:
+            return False
+        # Eval func.
+        decision = eval(card_func)
+        # If func that doesn't require decision, execute & return F -> decision cleanup.
+        # If func that req dec, exec, return T to decision (assumes caches set by card func).
+        if decision:
+            return True
+        return False
+
+    def play_major_improvement(self, major_imp: MajorImproveNames) -> bool:
+        """
+        Player gets to play a major improvement from the main game and put it in their game space.
+        Function takes in a MajorImproveNames, assuming it exists and errors if not found.
+        Useful to query first using 'deck.is_in_deck()' to confirm presence to avoid exception.
+        """
+        # Check if card is present in hand.
+        if not self.__game.major_imp_cards.is_in_deck(major_imp):
+            raise ValueError("Card requested not available.")
+        # Get cost to play.
+        build_cost = self.__game.major_imp_cards.get_build_cost(major_imp)
+        # If we requested the cooking hearths, this prompts another decision so kick out & handle.
+        if major_imp in {"4_cooking_hearth", "5_cooking_hearth"}:
+            self.__pending_payment = build_cost
+            self.__decision_func_cache = "self.return_fireplace_or_buy_hearth(buy_or_return='{}')"
+            self.__decision_args_cache = ["arg0: buy OR return"]
+            return True
+        # Check if we can pay for it.
+        if build_cost is not None:
+            # Check build cost if present.
+            if not self._check_inventory(build_cost):
+                raise ValueError("Not enough resources to pay card build cost.")
+            # Pay build cost.
+            self.__supply.pay(build_cost)
+
+# FIXME! left off here
+
+        return True
+
+    def return_fireplace_or_buy_hearth(self, buy_or_return: str) -> bool:
+        """
+        Sub-decision when playing a major imp. to 
+        either return a held fireplace OR just buy the hearth.
+        """
+        # If return-fireplace.
+        # Check that we have one to return.
+        # If not, raise error.
+        # If yes, return it.
+        # Get hearth.
+        # Set False, return, let decision clean up.
+        # Else we're trying to buy it.
+        # Check if we can pay for it (cost was cached as pending payment).
+        if self.__pending_payment is not None:
+            # Check build cost if present.
+            if not self._check_inventory(self.__pending_payment):
+                raise ValueError("Not enough resources to pay card build cost.")
+            # Pay build cost.
+            self.__supply.pay(self.__pending_payment)
+            self.__pending_payment = ()
+        
+# FIXME! left off here
+
+        return False
+
+    def load_decision_cache_with_funcs(self, func_1: str, func_2: str) -> bool:
+        """Function to load 2 game action functions to choose from."""
+        # Set cache & args.
+        self.__decision_func_cache = "self.choose_action_function(chosen_func='{}')"
+        self.__decision_args_cache = ["arg0: " + func_1 + " OR " + func_2]
+        return True
+
+    def choose_action_function(self, chosen_func: str) -> bool:
+        """Takes the function chosen and loads it in cache."""
+        self.__decision_func_cache = chosen_func
+        # Need a large if else tree to match chosen func to args.
+        # Limited number of times functions are chosen between, so ugly/unscalable but works.
+        # Minor imp.
+        if chosen_func == "self.play_minor_improvement('{}')":
+            self.__decision_args_cache = ["arg0: MinorImproveNames"]
+        # Major imp.
+        elif chosen_func == "self.play_major_improvement('{}')":
+            self.__decision_args_cache = ["aeg0: MajorImproveNames"]
+        # Sow.
+        # Bake bread.
+        # Get goods.
+        # Get animal.
+        # Cook.
+        return True
+
     def decision(self, decision_args: list[str]) -> None:
-        """Function to make a decision based on possible options from game effects."""
+        """
+        Function to make a decision based on possible options from game effects.
+        If func eval'd in decision has no further/chained decisions, decision() will cleanup state.
+        If there is a subsequent decision, the eval'd func will update the decision caches.
+        NOTE: decision() expects all args in list to be of type 'str'.
+        It converts them internally, and allows simple single type inputs.
+        Example: input of a Coordinate, arg should be str "(0,2)" not tuple (0,2).
+        """
         # Take args cache & input into func cache str.
         filled_str = self.__decision_func_cache.format(*decision_args)
         # Eval func.
@@ -321,6 +541,20 @@ class Player:
         self.__farmyard.move(**move_request)
         self.__game.action_spaces.move(**move_request)
         self.__supply.move(**move_request)
+
+    def _check_inventory(self, cost: tuple[tuple[int,str], ...]) -> bool:
+        """Check function verifying player has all items to pay for given cost."""
+        flag = True
+        for item in cost:
+            count = self.__supply.count(cast(GoodsType, item[1]))
+            # If we find that even 1 goods type does not have enough stock, we can't pay at all.
+            if count < item[0]:
+                return False
+        return flag
+
+    def _check_if_persons_still_to_move(self) -> bool:
+        """Checks if player has any more 'person' pieces to place."""
+        return False
 
     def _init_persons(self) -> None:
         """Move a person piece from one coordinate & board to another."""
@@ -393,3 +627,24 @@ class Players:
         """Returns iterable collection of players for easier batch ops."""
 # FIXME! Need to make sure read only
         return self.__players_tup
+
+    def pass_minor_imp_card_left(
+            self,
+            current_player_id: int,
+            minor_imp: MinorImproveNames
+            ) -> None:
+        """Moves the card to the left (player_id++) hand."""
+        if self.__num_players == 1:
+            # Just remove it.
+            self.__one.minor_improvements.pop(minor_imp)
+        if current_player_id == self.__num_players:
+            # Next player is actually player 1.
+            # Remove from current player.
+            card = self.__players_tup[current_player_id-1].minor_improvements.pop(minor_imp)
+            self.__one.minor_improvements.add_card_to_deck(minor_imp, card)
+        else:
+            # Increment player_id.
+            card = self.__players_tup[current_player_id-1].minor_improvements.pop(minor_imp)
+            self.__players_tup[current_player_id].minor_improvements.add_card_to_deck(
+                minor_imp, card
+            )

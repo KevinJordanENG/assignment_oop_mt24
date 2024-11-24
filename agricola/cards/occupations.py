@@ -14,7 +14,6 @@ class Occupation(Card):
     """
 
     _func: str
-    _played: bool
 
     def __new__(cls, name: OccupationNames, attributes: dict[str, Any]) -> Self:
         """Constructor for new occupation cards."""
@@ -29,8 +28,3 @@ class Occupation(Card):
     def func(self) -> str:
         """Returns str version of function call associated with card."""
         return self._func
-
-    @property
-    def played(self) -> bool:
-        """Returns True if card has been played by player, else False if still in hand."""
-        return self._played

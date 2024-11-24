@@ -58,7 +58,7 @@ class Farmyard(BaseBoard):
         """Performs build fence action. Can only move fence from inventory to farmyard."""
 
     def change_space_type(self, space_type: SpaceType, coord: Coordinate) -> None:
-        """Changes space type if request is valid/allowed."""
+        """Changes space type (assumes the check_space_change_validity() func already called)."""
         self._board[coord]["space_type"] = space_type
 
     def check_space_change_validity(self, space_type: SpaceType, coord: Coordinate) -> bool:
@@ -69,7 +69,9 @@ class Farmyard(BaseBoard):
             valid_current = (self._board[coord]["space_type"] == "unused"
                              and not self._board[coord]["stabled"])
             return valid_adj and valid_current
-# FIXME! add logic for other change requests (field)
+        elif space_type == "field":
+            return self._board[coord]["space_type"] == "unused"
+# FIXME! add logic for other change requests
         return False
 
     def get_house_type(self) -> SpaceType:
@@ -85,6 +87,7 @@ class Farmyard(BaseBoard):
     def _check_adjacency(self, space_type: SpaceType, coord: Coordinate) -> bool:
         """Checks that all adjacent spaces are of valid type for request."""
         row, col = coord[0], coord[1]
+        # False if off the board, else check if its same type.
         up = False if row-1 < 0 else (self._board[(row-1,col)]["space_type"] == space_type)
         down = False if row+1 > 2 else (self._board[(row+1,col)]["space_type"] == space_type)
         left = False if col-1 < 0 else (self._board[(row,col-1)]["space_type"] == space_type)

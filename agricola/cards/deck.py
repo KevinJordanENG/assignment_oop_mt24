@@ -14,7 +14,7 @@ from typing import Any, Self, cast, get_args
 from .major_improvements import MajorImprovement
 from .minor_improvements import MinorImprovement
 from .occupations import Occupation
-from .card import CardDictKeys
+from .card import Card, CardDictKeys
 from ..type_defs import MajorImproveNames, MinorImproveNames, OccupationNames, SpaceType
 
 
@@ -144,7 +144,7 @@ class Deck:
     @property
     def cards(self) -> dict[CardDictKeys, MajorImprovement|MinorImprovement|Occupation]:
         """Property to return read only view of cards in this deck object."""
-# FIXME! Need to make sure read only
+# FIXME: Need to make sure read only
         return self.__cards
 
     def get_seven_rand_cards(self) -> Deck:
@@ -173,18 +173,53 @@ class Deck:
                 return True
         return False
 
-    def get_next_action_space(self) -> None:
-        """"""
-
     def add_card_to_deck(
             self,
             key: CardDictKeys,
             card: MajorImprovement|MinorImprovement|Occupation
         ) -> None:
         """Adds card to deck from attributes & names."""
+# FIXME: add error checking that right card type for deck.
         self.__cards[key] = card
 
+    def get_prereqs_minor_imp(
+            self,
+            key: MinorImproveNames
+        ) -> Any: # Any used as various types/structures of prereqs
+        """Gets prerequisites for playing minor improvement."""
+        return self.__cards[key].attributes["prereq"]
 
+    def get_build_cost(self, key: CardDictKeys) -> Any: # Cost is varied.
+        """Fetches the build cost of requested card."""
+        if self.deck_type == "occupation":
+            raise ValueError("Occupations do not have 'build_cost' attribute.")
+        return self.__cards[key].attributes["build_cost"]
+
+    def get_func_cost(self, key: CardDictKeys) -> Any: # Cost is varied.
+        """Fetches the build cost of requested card."""
+        return self.__cards[key].attributes["func_cost"]
+
+    def play_card(self, key: CardDictKeys) -> str | None:
+        """Plays card from deck."""
+        self.__cards[key].set_played()
+        return self.__cards[key].func
+
+    def count_num_played(self) -> int:
+        """Counts the number of cards played in given hand/deck."""
+        count = 0
+        for card in self.__cards.values():
+            if card.played:
+                count += 1
+        return count
+
+    def pop(self, key: CardDictKeys) -> MajorImprovement|MinorImprovement|Occupation:
+        """Pops card from deck."""
+        card = self.__cards[key]
+        del self.__cards[key]
+        return card
+
+# TODO: traveling cards (MinorImp.) are just removed from play after played in 1 p game!
+    
     def _load_major(self, path: str) -> None:
         """Loads deck with all major improvement cards."""
         with open(path, 'r', encoding="utf-8") as data:

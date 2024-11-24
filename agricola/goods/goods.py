@@ -5,7 +5,7 @@ Module includes the TypedDict defining a base "Good",
 as well as Supply class, the main class used to manage inventory per player.
 """
 from copy import deepcopy
-from typing import NotRequired, Self, TypedDict
+from typing import NotRequired, Self, TypedDict, cast
 from ..type_defs import Location, Coordinate, GoodsType, Axis
 
 # TODO: eval if the pattern is needed once further building / testing done
@@ -83,11 +83,15 @@ class Supply:
     def build_fence(self) -> None:
         """Builds fence / moves it from inventory to farmyard."""
 
-    def pay(self) -> None:
-        """
-        Routine to 'pay' for game actions, removing items from inventory if enough
-        or raising an error if not enough resources.
-        """
+    def pay(self, payment: tuple[tuple[int,str], ...]) -> None:
+        """Routine to 'pay' for game actions, removing items from inventory."""
+        for item in payment: # For each unique good type / number tuple.
+            for _ in range(item[0]): # For num_goods of this goods type.
+                goods_type = cast(GoodsType, item[1])
+                fetch = self._get_general_good(goods_type, "inventory", (-1,-1))
+                if fetch is None:
+                    raise ValueError("Tried to pay with nonexistent good.")
+                self.remove(fetch[1])
 
     def move(
             self,

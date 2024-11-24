@@ -33,6 +33,7 @@ class Game:
             cls,
             *,
             num_players: int,
+# TODO: Decide if we actually want path to csv exposed or not.
             data_dir_path: str = os.path.join(os.getcwd(), "agricola", "data", ""),
             instance_uuid: str = str(uuid4())
         ) -> Self:

@@ -20,6 +20,7 @@ class Card(metaclass=ABCMeta):
     _name: CardDictKeys
     # Any is used here as values in dict are intentionally varied for functionality.
     _attributes: dict[str, Any]
+    _played: bool
 
     @property
     def name(self) -> CardDictKeys:
@@ -27,7 +28,16 @@ class Card(metaclass=ABCMeta):
         return self._name
 
     @property
+    def played(self) -> bool:
+        """Returns True if card has been played by player, else False if still in hand."""
+        return self._played
+
+    @property
     def attributes(self) -> dict[str, Any]:
         """Property returning read only view of this card's various data."""
 # FIXME! Need to make sure read only
         return self._attributes
+
+    def set_played(self) -> None:
+        """Changes this card's state to played."""
+        self._played = True

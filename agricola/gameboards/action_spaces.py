@@ -42,9 +42,6 @@ ROUND_COORDS: Final[list[Coordinate]] = [
 
 # TODO: change these to real functions once they exist
 FuncNoEval = set([
-    "TAKE_START_PLAYER_TOKEN+PLAY_MINOR_IMPR",
-    "PLOW",
-    "PLAY_OCCUP",
     "PLAY_MINOR_IMPR||PLAY_MAJOR_IMPR",
     "BUILD_FENCES",
     "SOW||BAKE_BREAD",
@@ -69,7 +66,12 @@ FuncNoEval = set([
     "self.get_goods(action='3_hollow')",
     "self.get_goods(action='4_hollow')",
     "self.get_goods(action='traveling_players')",
-    "self.build_rooms_and_or_stables()"
+    "self.build_rooms_and_or_stables()",
+    "self.take_start_player_token()",
+    "self.plow()",
+    "self.choose_occupation_to_play(action='lessons')",
+    "self.choose_occupation_to_play(action='3_lessons')",
+    "self.choose_occupation_to_play(action='4_lessons')"
 ])
 """Set of functions used to call action space effects, stored in dict as str."""
 
