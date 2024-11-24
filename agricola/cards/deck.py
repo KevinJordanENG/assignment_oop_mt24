@@ -14,7 +14,7 @@ from typing import Any, Self, cast, get_args
 from .major_improvements import MajorImprovement
 from .minor_improvements import MinorImprovement
 from .occupations import Occupation
-from .card import Card, CardDictKeys
+from .card import CardDictKeys
 from ..type_defs import MajorImproveNames, MinorImproveNames, OccupationNames, SpaceType
 
 
@@ -117,6 +117,10 @@ FuncNoEval = set([
 ])
 
 NoEvalTokens: set[str] = set(get_args(SpaceType)) | FuncNoEval
+"""
+Special set of tokens to NOT eval when loading CSV.
+This is used to preserve str names and str representation of function calls to execute actions.
+"""
 
 class Deck:
     """
@@ -130,8 +134,10 @@ class Deck:
         """Constructor for decks."""
         self = super().__new__(cls)
         self.__deck_type = deck_type
+        # If we have a path, we're loading in from CSV for init.
         if path is not None:
             self._load_csv(path, num_players)
+        # Otherwise we're dynamically creating new empty Deck somewhere within the game.
         else:
             self.__cards = {}
         return self
@@ -213,13 +219,16 @@ class Deck:
         return count
 
     def pop(self, key: CardDictKeys) -> MajorImprovement|MinorImprovement|Occupation:
-        """Pops card from deck."""
+        """
+        Pops card from deck.
+
+        Pop is a well known func and is exposed here to simplify popping a Card and supports
+        syntax of my_deck.pop() vs my_deck.cards.pop() for intuitive UX.
+        """
         card = self.__cards[key]
         del self.__cards[key]
         return card
 
-# TODO: traveling cards (MinorImp.) are just removed from play after played in 1 p game!
-    
     def _load_major(self, path: str) -> None:
         """Loads deck with all major improvement cards."""
         with open(path, 'r', encoding="utf-8") as data:

@@ -40,3 +40,26 @@ This file contains listed and described features of the implementation such as a
 - The fundamental logic/valid move checking is implemented in the board ABC '_move...' functions.
     - These functions are longer than normal as the if/else/error tree of validating move paths, object type, and space type are extensive.
 - Alongside the `agricola` package is a test script `agricola_test.py`. This script demonstrates most major game functions and represents a sample playing of <THE ENTIRE? A FEW ROUNDS?> the game.
+
+
+
+# TODOs for project tidy up:
+
+DONE---    1. Hide path (make global in game to be manually set)
+2. Build patterns (flyweight etc) from notes around
+3. Join all state action in GameState
+4. Add state checking to all funcs
+5. Make sure all private data can't be mod'ed
+6. Add checks of caller to make sure some methods are called only by appropriate object
+7. Verify error checking throughout
+8. Add type checking to decision()
+9. Document three categories here (type features, patterns, reusable structs)
+10. Make test script more verbose/complete
+11. Add comments as needed to all funcs
+12. Try to refactor away all `Any`s
+    - revisit decision to eval on read-in, maybe eval on func exec?
+    - repass the NoEvalTokens
+13. Change all TODOs into raise NotImplementedError
+14. Clean CSV data & update with all now present funcs
+15. Remove `bag` if not used
+16. Test all decision funcs

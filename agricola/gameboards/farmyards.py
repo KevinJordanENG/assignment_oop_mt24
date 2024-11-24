@@ -6,7 +6,7 @@ Uses BaseBoard ABC to handle unified board logic.
 from typing import TypedDict, cast
 
 from .board import BaseBoard, SpaceData
-from ..type_defs import Coordinate, SpaceType
+from ..type_defs import Coordinate, SpaceType, Axis
 
 class PerimeterData(TypedDict):
     """Lightweight way of keeping data on current perimeter usage."""
@@ -17,8 +17,8 @@ class PerimeterData(TypedDict):
 class Farmyard(BaseBoard):
     """Farmyard is the board given to each player to develop."""
 
-    _valid_perimeters: dict[str, set[Coordinate]]
-    _board_perimeters: dict[tuple[str, Coordinate], PerimeterData]
+    _valid_perimeters: dict[Axis, set[Coordinate]]
+    _board_perimeters: dict[tuple[Axis, Coordinate], PerimeterData]
 
     def __init__(self) -> None:
         """Initializer for Farmyard gameboard(s)."""
@@ -33,22 +33,22 @@ class Farmyard(BaseBoard):
         self._populate_spaces()
 
     @property
-    def valid_perimeters(self) -> dict[str, set[Coordinate]]:
+    def valid_perimeters(self) -> dict[Axis, set[Coordinate]]:
         """Property to return read only view of valid perimeter spaces in current board."""
 # FIXME! Need to make sure read only
         return self._valid_perimeters
 
     @property
-    def board_perimeters(self) -> dict[tuple[str, Coordinate], PerimeterData]:
+    def board_perimeters(self) -> dict[tuple[Axis, Coordinate], PerimeterData]:
         """Property returning read only view of current board perimeter spaces and their data."""
 # FIXME! Need to make sure read only
         return self._board_perimeters
 
     @property
-    def open_perimeters(self) -> dict[str, set[Coordinate]]:
+    def open_perimeters(self) -> dict[Axis, set[Coordinate]]:
         """Returns read only view of open perimeter spaces."""
 # FIXME! Need to make sure read only
-        sub_dict: dict[str, set[Coordinate]] = {"v": set(), "h": set()}
+        sub_dict: dict[Axis, set[Coordinate]] = {"v": set(), "h": set()}
         for tup, data in self._board_perimeters.items():
             if not data["occupied"]:
                 sub_dict[tup[0]].add(tup[1])
@@ -69,7 +69,7 @@ class Farmyard(BaseBoard):
             valid_current = (self._board[coord]["space_type"] == "unused"
                              and not self._board[coord]["stabled"])
             return valid_adj and valid_current
-        elif space_type == "field":
+        if space_type == "field":
             return self._board[coord]["space_type"] == "unused"
 # FIXME! add logic for other change requests
         return False

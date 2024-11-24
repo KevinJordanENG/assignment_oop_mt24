@@ -16,6 +16,13 @@ from .cards import Deck
 from .type_defs import SpaceType, Coordinate, GameStates, GoodsType, Location
 
 
+DATA_DIR_PATH: str = os.path.join(os.getcwd(), "agricola", "data", "")
+"""
+This global is the path to the CSV's containing card & action data.
+It is not meant to be set by the `user`, rather, set once by the `operator`
+when installing the game on target machine the 1st time.
+"""
+
 class Game:
     """
     Agricola Game API instance class.
@@ -33,8 +40,6 @@ class Game:
             cls,
             *,
             num_players: int,
-# TODO: Decide if we actually want path to csv exposed or not.
-            data_dir_path: str = os.path.join(os.getcwd(), "agricola", "data", ""),
             instance_uuid: str = str(uuid4())
         ) -> Self:
         """
@@ -45,12 +50,12 @@ class Game:
             raise ValueError("Number of players must be between 1 and 4.")
         self.__instance_uuid = instance_uuid
         self.__state = GameState(num_players)
-        self._init_action_spaces(num_players, path=data_dir_path)
+        self._init_action_spaces(num_players, path=DATA_DIR_PATH)
         self._init_tiles()
-        self._init_major_imp_cards(path=data_dir_path)
+        self._init_major_imp_cards(path=DATA_DIR_PATH)
         # Init both full decks of minor impr. & occupation cards.
-        minor_imps_full = self._init_minor_imp_cards(path=data_dir_path)
-        occups_full = self._init_occup_cards(path=data_dir_path, num_players=num_players)
+        minor_imps_full = self._init_minor_imp_cards(path=DATA_DIR_PATH)
+        occups_full = self._init_occup_cards(path=DATA_DIR_PATH, num_players=num_players)
         # Init players.
         self.__player = self._init_players(num_players, minor_imps_full, occups_full)
         # Delete leftovers from these decks as remaining cards not needed after game init.

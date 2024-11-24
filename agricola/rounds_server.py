@@ -52,26 +52,6 @@ class PlayerActionServer:
         self.__game_state.STATE.set("current_player_decision")
 
 
-# class TurnServer:
-#     """Small sub state machine governing 'person' placement turn logic."""
-#     # Each round, players (clockwise/inc order) place all 'person's on action spaces one at a time.
-
-#     __game_state: GameState
-#     __player_action_server: PlayerActionServer
-
-#     def __new__(cls, game_state: GameState) -> Self:
-#         self = super().__new__(cls)
-#         self.__game_state = game_state
-#         self.__player_action_server = PlayerActionServer(game_state)
-#         return self
-
-#     @property
-#     def player_action_server(self) -> PlayerActionServer:
-# # FIXME! Need to make sure read only or switch to getter/setter
-#         """Returns player action server object."""
-#         return self.__player_action_server
-
-
 class RoundServer:
     """Medium sub state machine handling state actions within a round."""
 

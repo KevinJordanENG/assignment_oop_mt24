@@ -89,7 +89,6 @@ class ActionSpaces(BaseBoard):
 
     def __init__(self, num_players: int, path: str) -> None:
         """Initializer for Action Spaces gameboard."""
-# TODO: make sure not already created, maybe singleton within Game instance?
         super().__init__()
         # Set board type.
         self._board_type = "action_space"

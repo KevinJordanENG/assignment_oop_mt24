@@ -8,7 +8,15 @@ from .goods import Supply
 from .gameboards import Farmyard, MoveRequest
 from .cards import Deck
 from .rounds_server import GameState
-from .type_defs import GoodsType, Coordinate, Action, SpaceType, MinorImproveNames, OccupationNames, MajorImproveNames
+from .type_defs import (
+    GoodsType,
+    Coordinate,
+    Action,
+    SpaceType,
+    MinorImproveNames,
+    OccupationNames,
+    MajorImproveNames
+)
 if TYPE_CHECKING:
     from .game import Game
 
@@ -31,11 +39,11 @@ class Player:
     __occupation_cards: Deck
     __begging_markers: int
     __has_future_goods_on_action_spaces: bool
-    __future_goods: list[tuple[int,GoodsType]]
-                             # ^^^round_num
+    __future_goods: list[tuple[int, GoodsType]]
+                             # ^^^ round_num
     __decision_func_cache: str # str version of func to be executed.
-    __decision_args_cache: list[str] # list of types of args required for cached decision func.
-    __pending_payment: tuple[tuple[int,str], ...]
+    __decision_args_cache: list[str] # List of types of args required for cached decision func.
+    __pending_payment: tuple[tuple[int,str], ...] # Sometimes required when decision chains present.
 
     def __new__(
             cls,
@@ -221,25 +229,6 @@ class Player:
             pass
         return False
 
-    # def get_animals(self) -> bool:
-    #     """Gets animals and prompts decision of where to place animals."""
-    #     # Check if we have a major improvement for cooking immediately.
-    #     if self.__player_major_imp_cards is not None:
-    #         # If has option to cook, return cook as decision func.
-    #         if (self.__player_major_imp_cards.is_in_deck("2_fireplace")
-    #             or self.__player_major_imp_cards.is_in_deck("3_fireplace")
-    #             or self.__player_major_imp_cards.is_in_deck("4_cooking_hearth")
-    #             or self.__player_major_imp_cards.is_in_deck("5_cooking_hearth")):
-    #             # FIXME!
-    #             self.__decision_func_cache = "self.cook()"
-    #             self.__decision_args_cache.append("")
-    #             return True
-    #     # If no cooking improvement return move_items as decision func.
-    #     # FIXME!
-    #     self.__decision_func_cache = "self.move_items()"
-    #     self.__decision_args_cache.append("")
-    #     return True
-
     def build_rooms_and_or_stables(self) -> bool:
         """Function from action space allowing building of rooms &| stables."""
         self.__decision_func_cache = "self.choose_room_or_stable('{}')"
@@ -272,6 +261,7 @@ class Player:
             count_2 = self.__supply.count(cost_of_interest[1][1])
             if count_1 < cost_of_interest[0][0] or count_2 < cost_of_interest[1][0]:
 # FIXME! Decide if we should actually clear the decision caches or not.
+    # TODO: TODO TODO: probably DONT clear as allows try/catch in test script & re-exec of cached funcs!
                 # Clear func & arg caches.
                 self.__decision_func_cache = ""
                 self.__decision_args_cache = []
@@ -506,6 +496,7 @@ class Player:
         # Major imp.
         elif chosen_func == "self.play_major_improvement('{}')":
             self.__decision_args_cache = ["aeg0: MajorImproveNames"]
+# TODO: finish list
         # Sow.
         # Bake bread.
         # Get goods.

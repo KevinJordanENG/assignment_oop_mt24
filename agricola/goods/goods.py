@@ -8,21 +8,10 @@ from copy import deepcopy
 from typing import NotRequired, Self, TypedDict, cast
 from ..type_defs import Location, Coordinate, GoodsType, Axis
 
-# TODO: eval if the pattern is needed once further building / testing done
-# LISTING_STATES: Final[tuple[ListingState, ...]] = (
-#     "draft", "active", "sold", "cancelled"
-# )
-# """
-# Tuple of listings states, for use at runtime.
-
-# Technically, we can get them from ListingState.__args__, but the internals of
-# type alias have a tendency to change once in a while, so that is only an option
-# if you are willing to keep up to date with breaking changes in the typing lib.
-# """
 
 class Good(TypedDict, total=True):
     """
-    Generalized agricola good with type, gameboard coordinates, and location.
+    Generalized agricola good with type, coordinates, location, and optional axis for fences.
     
     Small lightweight TypedDict of TypeAlias used for efficient/portable data representation.
     """
@@ -229,7 +218,7 @@ class Supply:
             source_board: Location,
             source_coord: Coordinate
         ) -> tuple[Good,int] | None:
-        """Finds general good if present."""
+        """Finds general good if present and returns Good and its index in supply."""
         for i, good in enumerate(self.__general_goods):
             if (good["goods_type"] == item
                 and good["location"] == source_board
