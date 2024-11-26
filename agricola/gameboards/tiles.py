@@ -10,6 +10,7 @@ from typing import Self
 
 from ..type_defs import SpaceType
 
+
 class Tiles:
     """
     Class that handles the special tile game objects.

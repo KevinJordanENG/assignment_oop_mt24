@@ -1,14 +1,16 @@
 """
 Action spaces module maintaining the main game board.
 """
-
+from __future__ import annotations
 import os
 import csv
 import ast
 import random
-from typing import Any, Final, cast, get_args
+from typing import Any, Final, cast, get_args, TYPE_CHECKING
 from .board import BaseBoard, SpaceData
-from ..type_defs import Coordinate, Action, GoodsType, SpaceType
+from ..type_defs import Coordinate, Action, GoodsType, SpaceType, GameStates
+if TYPE_CHECKING:
+    from ..game import Game
 
 ActionCSVLine = tuple[Action, dict[str, Any]]
 """
@@ -20,6 +22,7 @@ Decision was made to immediately evaluate these read in CSV str into their prope
 instead of waiting for their needed use to evaluate them, except reserved names and functions.
 """
 
+
 START_COORDS: Final[dict[str, set[Coordinate]]] = {
     "1_and_2_player": set([(0,1), (1,1), (2,1), (3,1), (4,1), (5,1), (1,2), (2,2), (3,2), (4,2)]),
     "3_player_adtl": set([(1,0), (2,0), (3,0), (4,0)]),
@@ -30,6 +33,7 @@ Dict containing named sets of starting coordinates as defined in rulebook.
 Marked as Final as these sets are predefined and illegal to modify.
 """
 
+
 ROUND_COORDS: Final[list[Coordinate]] = [
     (0,2), (0,3), (1,3), (2,3), # Phase 1
     (0,4), (1,4), (2,4), # Phase 2
@@ -39,6 +43,7 @@ ROUND_COORDS: Final[list[Coordinate]] = [
     (0,8) # Phase 6
 ]
 """List containing ordered coordinates available per stage as defined in rulebook."""
+
 
 # TODO: change these to real functions once they exist
 FuncNoEval = set([
@@ -75,11 +80,13 @@ FuncNoEval = set([
 ])
 """Set of functions used to call action space effects, stored in dict as str."""
 
+
 NoEvalTokens: set[str] = set(get_args(GoodsType)) | set(get_args(SpaceType)) | FuncNoEval
 """
 Special set of tokens to NOT eval when loading CSV.
 This is used to preserve str names and str representation of function calls to execute actions.
 """
+
 
 class ActionSpaces(BaseBoard):
     """Action spaces is the class for the main shared gameboard."""
@@ -87,9 +94,10 @@ class ActionSpaces(BaseBoard):
     # Any is used here as values in dict are intentionally varied for functionality.
     __csv_data: dict[Action, dict[str, Any]]
 
-    def __init__(self, num_players: int, path: str) -> None:
+    def __init__(self, game: Game, num_players: int, path: str) -> None:
         """Initializer for Action Spaces gameboard."""
         super().__init__()
+        self._game = game
         # Set board type.
         self._board_type = "action_space"
         # Initialize starting spaces config depending on num_players.
@@ -99,18 +107,78 @@ class ActionSpaces(BaseBoard):
 
     def get_action_function(self, action: Action) -> str:
         """Gets the function (as str) associated with action key."""
+        # Check game is in valid state.
+        valid_states: set[GameStates] = {
+            "not_started",
+            "finished",
+            "running_game",
+            "running_round_prep",
+            "running_work_player_1",
+            "running_work_player_2",
+            "running_work_player_3",
+            "running_work_player_4",
+            "current_player_decision",
+            "running_round_return_home",
+            "running_round_harvest"
+        }
+        self._game.state.is_valid_state_for_func(self._game.game_state, valid_states)
         return str(self.__csv_data[action]["func"])
 
     def get_action_func_output(self, action: Action) -> Any: # Any used here as output is varied.
         """Gets the output from specified action key."""
+        # Check game is in valid state.
+        valid_states: set[GameStates] = {
+            "not_started",
+            "finished",
+            "running_game",
+            "running_round_prep",
+            "running_work_player_1",
+            "running_work_player_2",
+            "running_work_player_3",
+            "running_work_player_4",
+            "current_player_decision",
+            "running_round_return_home",
+            "running_round_harvest"
+        }
+        self._game.state.is_valid_state_for_func(self._game.game_state, valid_states)
         return self.__csv_data[action]["output"]
 
     def get_action_func_cost(self, action: Action) -> Any: # Any used here as cost is varied.
         """Gets the cost of specified action key."""
+        # Check game is in valid state.
+        valid_states: set[GameStates] = {
+            "not_started",
+            "finished",
+            "running_game",
+            "running_round_prep",
+            "running_work_player_1",
+            "running_work_player_2",
+            "running_work_player_3",
+            "running_work_player_4",
+            "current_player_decision",
+            "running_round_return_home",
+            "running_round_harvest"
+        }
+        self._game.state.is_valid_state_for_func(self._game.game_state, valid_states)
         return self.__csv_data[action]["costs"]
 
     def get_space_data_from_action(self, action: Action) -> tuple[Coordinate, SpaceData] | None:
         """Returns space data for requested action key."""
+        # Check game is in valid state.
+        valid_states: set[GameStates] = {
+            "not_started",
+            "finished",
+            "running_game",
+            "running_round_prep",
+            "running_work_player_1",
+            "running_work_player_2",
+            "running_work_player_3",
+            "running_work_player_4",
+            "current_player_decision",
+            "running_round_return_home",
+            "running_round_harvest"
+        }
+        self._game.state.is_valid_state_for_func(self._game.game_state, valid_states)
         for key, value in self._board.items():
             if value["action"] == action:
                 return (key, value)
@@ -118,12 +186,18 @@ class ActionSpaces(BaseBoard):
 
     def add_action_space(self, round_num: int, stage: int) -> None:
         """Public method to add action space."""
+        # Check game is in valid state.
+        valid_states: set[GameStates] = {"running_round_prep"}
+        self._game.state.is_valid_state_for_func(self._game.game_state, valid_states)
         line: ActionCSVLine = self._fetch_csv_line(round_num=round_num, stage=stage)
         self._board[ROUND_COORDS[round_num-1]] = self._bundle_space_data(line)
         self._valid_spaces.add(ROUND_COORDS[round_num-1])
 
     def accumulate_all(self) -> None:
         """Increases all accumulation spaces' goods by their respective amount."""
+        # Check game is in valid state.
+        valid_states: set[GameStates] = {"running_round_prep"}
+        self._game.state.is_valid_state_for_func(self._game.game_state, valid_states)
         for data in self._board.values():
             if data["accumulate"]:
                 data["num_present"] += data["accum_number"]

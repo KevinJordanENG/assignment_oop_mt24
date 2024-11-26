@@ -3,12 +3,14 @@ Main class / API for the agricola game pkg.
 
 Implements the facade pattern allowing full playing of the game through main 'Game' class.
 """
-
+# Standard lib imports.
+from __future__ import annotations
 import os
 import random
 from uuid import uuid4
-from typing import Self, cast
-
+from typing import ClassVar, Self, cast, final
+from weakref import WeakValueDictionary
+# Relative imports from `agricola` package.
 from .players import Player, Players
 from .gameboards import ActionSpaces, Tiles, MoveRequest
 from .rounds_server import GameState
@@ -23,12 +25,14 @@ It is not meant to be set by the `user`, rather, set once by the `operator`
 when installing the game on target machine the 1st time.
 """
 
+@final # No subclasses allowed (expansion packs would just add to Decks' CSVs.)
 class Game:
     """
     Agricola Game API instance class.
     """
 
-# TODO: Implement flyweight cuz why not!
+    __game_instances: ClassVar[WeakValueDictionary[str, Game]] = WeakValueDictionary()
+    # ^^^^^^^^^^^^^^ --> Flyweight pattern!
     __instance_uuid: str
     __player: Players
     __action_spaces: ActionSpaces
@@ -44,22 +48,34 @@ class Game:
         ) -> Self:
         """
         Game class constructor.
+
+        Uses flyweight pattern to enforce that each Game object is fully unique,
+        but equally allowing multiple different instances.
         """
-        self = super().__new__(cls)
+        # Early reject if invalid num_players
         if (num_players < 1) or (num_players > 4):
             raise ValueError("Number of players must be between 1 and 4.")
-        self.__instance_uuid = instance_uuid
-        self.__state = GameState(num_players)
-        self._init_action_spaces(num_players, path=DATA_DIR_PATH)
-        self._init_tiles()
-        self._init_major_imp_cards(path=DATA_DIR_PATH)
-        # Init both full decks of minor impr. & occupation cards.
-        minor_imps_full = self._init_minor_imp_cards(path=DATA_DIR_PATH)
-        occups_full = self._init_occup_cards(path=DATA_DIR_PATH, num_players=num_players)
-        # Init players.
-        self.__player = self._init_players(num_players, minor_imps_full, occups_full)
-        # Delete leftovers from these decks as remaining cards not needed after game init.
-        del minor_imps_full, occups_full
+        # Check if game instance (with same uuid) already exists.
+        self = Game.__game_instances.get(instance_uuid)
+        if self is None:
+            # If game not found, create/init it.
+            self = super().__new__(cls)
+            self.__instance_uuid = instance_uuid
+            # Init game state (also flyweight).
+            self.__state = GameState(num_players, instance_uuid)
+            # Init game controlled objects.
+            self._init_action_spaces(num_players, path=DATA_DIR_PATH)
+            self._init_tiles()
+            self._init_major_imp_cards(path=DATA_DIR_PATH)
+            # Init both full decks of minor impr. & occupation cards.
+            minor_imps_full = self._init_minor_imp_cards(path=DATA_DIR_PATH)
+            occups_full = self._init_occup_cards(path=DATA_DIR_PATH, num_players=num_players)
+            # Init players.
+            self.__player = self._init_players(num_players, minor_imps_full, occups_full)
+            # Delete leftovers from these decks as remaining cards not needed after game init.
+            del minor_imps_full, occups_full
+            # Store instance as otherwise flyweight doesn't work.
+            Game.__game_instances[instance_uuid] = self
         return self
 
     @property
@@ -81,6 +97,12 @@ class Game:
     def game_state(self) -> GameStates:
         """Returns the current state of the game from GameState server."""
         return self.__state.STATE.get()
+
+    @property
+    def state(self) -> GameState:
+        """Returns read only view of the GameState server."""
+# FIXME! Need to make sure return is ACTUALLY read only.
+        return self.__state
 
     @property
     def player(self) -> Players:
@@ -116,10 +138,11 @@ class Game:
     def start_next_round(self) -> None:
         """Public method to start the next round of game play (of 14 total)."""
         # Check game is in valid state.
-        valid_states: set[GameStates] = {"running_game"}
+        valid_states: set[GameStates] = {
+            "running_game", "running_round_return_home", "running_round_harvest"
+        }
         self.__state.is_valid_state_for_func(self.game_state, valid_states)
-        self.__state.play_round()
-        self.__state.round_server.start_round(self.__action_spaces, self.__player)
+        self.__state.start_round(self.__action_spaces, self.__player)
 
     def play_next_player_work_actions(self) -> None:
         """Public method to play the next player action in the work step of round."""
@@ -128,10 +151,11 @@ class Game:
             "running_round_prep",
             "running_work_player_1",
             "running_work_player_2",
-            "running_work_player_3"
+            "running_work_player_3",
+            "running_work_player_4"
         }
         self.__state.is_valid_state_for_func(self.game_state, valid_states)
-        self.__state.round_server.player_action_server.play_next_player_actions()
+        self.__state.play_next_player_actions()
 
     def place_person_on_action_space(
             self,
@@ -158,7 +182,19 @@ class Game:
 
     def move_item(self, move_request: MoveRequest, *, player_id: int) -> None:
         """Unified move routine from 'game' directly that changes all necessary data."""
-# TODO: Add valid states
+        # Check game is in valid state.
+        valid_states: set[GameStates] = {
+            "running_game",
+            "running_round_prep",
+            "running_work_player_1",
+            "running_work_player_2",
+            "running_work_player_3",
+            "running_work_player_4",
+            "current_player_decision",
+            "running_round_return_home",
+            "running_round_harvest"
+        }
+        self.__state.is_valid_state_for_func(self.game_state, valid_states)
         self.__player.players_tup[player_id-1].move_items(move_request)
 
     def quit_game_early(self) -> None:
@@ -175,7 +211,8 @@ class Game:
             "running_work_player_1",
             "running_work_player_2",
             "running_work_player_3",
-            "running_work_player_4"
+            "running_work_player_4",
+            "current_player_decision"
         }
         self.__state.is_valid_state_for_func(self.game_state, valid_states)
         self.__state.stop()
@@ -214,7 +251,7 @@ class Game:
         valid_states: set[GameStates] = {"not_started"}
         self.__state.is_valid_state_for_func(self.game_state, valid_states)
         # Init.
-        self.__action_spaces = ActionSpaces(num_players, path)
+        self.__action_spaces = ActionSpaces(self, num_players, path)
 
     def _init_tiles(self) -> None:
         """Initializes game store of limited 2 sided tiles."""
@@ -240,7 +277,7 @@ class Game:
         valid_states: set[GameStates] = {"not_started"}
         self.__state.is_valid_state_for_func(self.game_state, valid_states)
         # Init.
-        self.__major_imp_cards = Deck("major", path=path)
+        self.__major_imp_cards = Deck(self, "major", path=path)
 
     def _init_minor_imp_cards(self, *, path: str) -> Deck:
         """Loads full minor improvements card deck, used in player init, then extras dropped."""
@@ -248,7 +285,7 @@ class Game:
         valid_states: set[GameStates] = {"not_started"}
         self.__state.is_valid_state_for_func(self.game_state, valid_states)
         # Init.
-        return Deck("minor", path=path)
+        return Deck(self, "minor", path=path)
 
     def _init_occup_cards(self, *, path: str, num_players: int) -> Deck:
         """Loads occupation card deck per num_players, used in player init, then extras dropped."""
@@ -256,7 +293,7 @@ class Game:
         valid_states: set[GameStates] = {"not_started"}
         self.__state.is_valid_state_for_func(self.game_state, valid_states)
         # Init.
-        return Deck("occupation", path=path, num_players=num_players)
+        return Deck(self, "occupation", path=path, num_players=num_players)
 
     def _init_players(self, num_players: int, minor: Deck, occup: Deck) -> Players:
         """Creates player instances for the game."""
@@ -275,7 +312,6 @@ class Game:
             players_list.append(
                 Player(
                     self,
-                    self.__state,
                     set_of_seven_minor,
                     set_of_seven_occup,
                     num_players,

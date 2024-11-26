@@ -2,11 +2,14 @@
 Farmyards module containing concrete implementation of individual player boards.
 Uses BaseBoard ABC to handle unified board logic.
 """
-
-from typing import TypedDict, cast
+from __future__ import annotations
+from typing import TypedDict, cast, TYPE_CHECKING
 
 from .board import BaseBoard, SpaceData
-from ..type_defs import Coordinate, SpaceType, Axis
+from ..type_defs import Coordinate, SpaceType, Axis, GameStates
+if TYPE_CHECKING:
+    from ..game import Game
+
 
 class PerimeterData(TypedDict):
     """Lightweight way of keeping data on current perimeter usage."""
@@ -14,15 +17,17 @@ class PerimeterData(TypedDict):
     space_type: SpaceType
     occupied: bool
 
+
 class Farmyard(BaseBoard):
     """Farmyard is the board given to each player to develop."""
 
     _valid_perimeters: dict[Axis, set[Coordinate]]
     _board_perimeters: dict[tuple[Axis, Coordinate], PerimeterData]
 
-    def __init__(self) -> None:
-        """Initializer for Farmyard gameboard(s)."""
+    def __init__(self, game: Game) -> None:
+        """Initializer for Farmyard gameboard."""
         super().__init__()
+        self._game = game
         # Set board type.
         self._board_type = "farmyard"
         # Set valid spaces.
@@ -56,13 +61,36 @@ class Farmyard(BaseBoard):
 
     def build_fence(self) -> None:
         """Performs build fence action. Can only move fence from inventory to farmyard."""
+        raise NotImplementedError()
 
     def change_space_type(self, space_type: SpaceType, coord: Coordinate) -> None:
         """Changes space type (assumes the check_space_change_validity() func already called)."""
+        # Check game is in valid state.
+        valid_states: set[GameStates] = {
+            "running_work_player_1",
+            "running_work_player_2",
+            "running_work_player_3",
+            "running_work_player_4",
+            "current_player_decision"
+        }
+        self._game.state.is_valid_state_for_func(self._game.game_state, valid_states)
         self._board[coord]["space_type"] = space_type
 
     def check_space_change_validity(self, space_type: SpaceType, coord: Coordinate) -> bool:
         """Returns bool if requested new space type is valid at specified coord."""
+        # Check game is in valid state.
+        valid_states: set[GameStates] = {
+            "running_game",
+            "running_round_prep",
+            "running_work_player_1",
+            "running_work_player_2",
+            "running_work_player_3",
+            "running_work_player_4",
+            "current_player_decision",
+            "running_round_return_home",
+            "running_round_harvest"
+        }
+        self._game.state.is_valid_state_for_func(self._game.game_state, valid_states)
         # Handle room requests.
         if space_type in {"wood_room", "clay_room", "stone_room"}:
             valid_adj = self._check_adjacency(space_type, coord)
@@ -76,6 +104,20 @@ class Farmyard(BaseBoard):
 
     def get_house_type(self) -> SpaceType:
         """Checks & returns house type."""
+        # Check game is in valid state.
+        valid_states: set[GameStates] = {
+            "not_started",
+            "running_game",
+            "running_round_prep",
+            "running_work_player_1",
+            "running_work_player_2",
+            "running_work_player_3",
+            "running_work_player_4",
+            "current_player_decision",
+            "running_round_return_home",
+            "running_round_harvest"
+        }
+        self._game.state.is_valid_state_for_func(self._game.game_state, valid_states)
         house_type = None
         for space_data in self._board.values():
             if space_data["space_type"] in {"wood_room", "clay_room", "stone_room"}:

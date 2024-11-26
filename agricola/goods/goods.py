@@ -4,9 +4,13 @@ Module responsible for managing inventory of goods.
 Module includes the TypedDict defining a base "Good",
 as well as Supply class, the main class used to manage inventory per player.
 """
+from __future__ import annotations
 from copy import deepcopy
-from typing import NotRequired, Self, TypedDict, cast
-from ..type_defs import Location, Coordinate, GoodsType, Axis
+from typing import NotRequired, Self, TypedDict, cast, TYPE_CHECKING
+
+from ..type_defs import Location, Coordinate, GoodsType, Axis, GameStates
+if TYPE_CHECKING:
+    from ..game import Game
 
 
 class Good(TypedDict, total=True):
@@ -28,11 +32,13 @@ class Supply:
     An inventory of goods initialized and maintained per player.
     """
 
+    __game: Game
     __limited_goods: list[Good] # Never created or destroyed, just moved.
     __general_goods: list[Good] # Supports add & remove ops.
 
-    def __new__(cls, *, num_food: int) -> Self:
+    def __new__(cls, game: Game, *, num_food: int) -> Self:
         self = super().__new__(cls)
+        self.__game = game
         self.__limited_goods = self._init_limited_goods()
         self.__general_goods = self._init_general_goods(num_food)
         return self
@@ -51,7 +57,22 @@ class Supply:
 
     def count(self, goods_type: GoodsType) -> int:
         """Counts number of specified goods type in current inventory."""
-# FIXME! Maybe try and use list comp here if poss/time.
+        # Check game is in valid state.
+        valid_states: set[GameStates] = {
+            "not_started",
+            "finished",
+            "running_game",
+            "running_round_prep",
+            "running_work_player_1",
+            "running_work_player_2",
+            "running_work_player_3",
+            "running_work_player_4",
+            "current_player_decision",
+            "running_round_return_home",
+            "running_round_harvest"
+        }
+        self.__game.state.is_valid_state_for_func(self.__game.game_state, valid_states)
+        # Decide which list to search in.
         if goods_type in {"fence", "stable", "person"}:
             stock_type = self.__limited_goods
         else:
@@ -63,17 +84,45 @@ class Supply:
 
     def add(self, item: Good) -> None:
         """Adds a good to (general) inventory."""
+        # Check game is in valid state.
+        valid_states: set[GameStates] = {
+            "running_work_player_1",
+            "running_work_player_2",
+            "running_work_player_3",
+            "running_work_player_4",
+            "current_player_decision"
+        }
+        self.__game.state.is_valid_state_for_func(self.__game.game_state, valid_states)
         self.__general_goods.append(item)
 
     def remove(self, ind: int) -> None:
         """Removes a good from (general) inventory by index."""
+        # Check game is in valid state.
+        valid_states: set[GameStates] = {
+            "running_work_player_1",
+            "running_work_player_2",
+            "running_work_player_3",
+            "running_work_player_4",
+            "current_player_decision"
+        }
+        self.__game.state.is_valid_state_for_func(self.__game.game_state, valid_states)
         del self.__general_goods[ind]
 
     def build_fence(self) -> None:
         """Builds fence / moves it from inventory to farmyard."""
+        raise NotImplementedError()
 
     def pay(self, payment: tuple[tuple[int,str], ...]) -> None:
         """Routine to 'pay' for game actions, removing items from inventory."""
+        # Check game is in valid state.
+        valid_states: set[GameStates] = {
+            "running_work_player_1",
+            "running_work_player_2",
+            "running_work_player_3",
+            "running_work_player_4",
+            "current_player_decision"
+        }
+        self.__game.state.is_valid_state_for_func(self.__game.game_state, valid_states)
         for item in payment: # For each unique good type / number tuple.
             for _ in range(item[0]): # For num_goods of this goods type.
                 goods_type = cast(GoodsType, item[1])
@@ -95,6 +144,20 @@ class Supply:
         Unified move routine handling board and coordinate changes of Goods.
         None for source implies inventory.
         """
+        # Check game is in valid state.
+        valid_states: set[GameStates] = {
+            "not_started",
+            "running_game",
+            "running_round_prep",
+            "running_work_player_1",
+            "running_work_player_2",
+            "running_work_player_3",
+            "running_work_player_4",
+            "current_player_decision",
+            "running_round_return_home",
+            "running_round_harvest"
+        }
+        self.__game.state.is_valid_state_for_func(self.__game.game_state, valid_states)
         # Fences are handled elsewhere.
         if goods_type == "fence":
             raise ValueError(

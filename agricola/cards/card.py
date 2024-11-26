@@ -2,11 +2,13 @@
 Module defining ABC 'Card' to be inherited from by 
 'MajorImprovements', 'MinorImprovements', & 'Occupations'.
 """
-
+from __future__ import annotations
 from abc import ABCMeta
-from typing import Any
+from typing import Any, TYPE_CHECKING
 
-from ..type_defs import MajorImproveNames, MinorImproveNames, OccupationNames
+from ..type_defs import MajorImproveNames, MinorImproveNames, OccupationNames, GameStates
+if TYPE_CHECKING:
+    from ..game import Game
 
 
 CardDictKeys = MajorImproveNames | MinorImproveNames | OccupationNames
@@ -17,6 +19,7 @@ class Card(metaclass=ABCMeta):
     ABC Card defining base card functions.
     """
 
+    _game: Game
     _name: CardDictKeys
     # Any is used here as values in dict are intentionally varied for functionality.
     _attributes: dict[str, Any]
@@ -40,4 +43,13 @@ class Card(metaclass=ABCMeta):
 
     def set_played(self) -> None:
         """Changes this card's state to played."""
+        # Check game is in valid state.
+        valid_states: set[GameStates] = {
+            "running_work_player_1",
+            "running_work_player_2",
+            "running_work_player_3",
+            "running_work_player_4",
+            "current_player_decision"
+        }
+        self._game.state.is_valid_state_for_func(self._game.game_state, valid_states)
         self._played = True

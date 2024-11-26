@@ -1,11 +1,13 @@
 """
 Module defining Occupation cards.
 """
-
-from typing import Any, Self
+from __future__ import annotations
+from typing import Any, Self, TYPE_CHECKING
 
 from .card import Card
 from ..type_defs import OccupationNames
+if TYPE_CHECKING:
+    from ..game import Game
 
 
 class Occupation(Card):
@@ -15,9 +17,10 @@ class Occupation(Card):
 
     _func: str
 
-    def __new__(cls, name: OccupationNames, attributes: dict[str, Any]) -> Self:
+    def __new__(cls, game: Game, name: OccupationNames, attributes: dict[str, Any]) -> Self:
         """Constructor for new occupation cards."""
         self = super().__new__(cls)
+        self._game = game
         self._name = name
         self._attributes = attributes
         self._func = attributes["func"]
