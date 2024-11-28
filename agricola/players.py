@@ -64,7 +64,7 @@ class Player:
         else:
             self.__supply = Supply(game, num_food=2 if starting else 3)
         self.__farmyard = Farmyard(game)
-        self._init_persons()
+        self.__init_persons()
         self.__player_major_imp_cards = None
         self.__minor_imp_cards = minor_imp_cards
         self.__occupation_cards = occup_cards
@@ -395,7 +395,7 @@ class Player:
         # Check if we can pay for it.
         if build_cost is not None:
             # Check build cost if present.
-            if not self._check_inventory(build_cost):
+            if not self.__check_inventory(build_cost):
                 raise ValueError("Not enough resources to pay card build cost.")
             # Pay build cost.
             self.__supply.pay(build_cost)
@@ -470,7 +470,7 @@ class Player:
             raise ValueError("Invalid action space to play occupation from.")
         # Check that we can pay for it.
         if cost is not None:
-            if not self._check_inventory(cost):
+            if not self.__check_inventory(cost):
                 raise ValueError("Not enough resources to pay card play cost.")
             # Pay for it.
             self.__supply.pay(cost)
@@ -527,7 +527,7 @@ class Player:
         # Check if we can pay for it.
         if build_cost is not None:
             # Check build cost if present.
-            if not self._check_inventory(build_cost):
+            if not self.__check_inventory(build_cost):
                 raise ValueError("Not enough resources to pay card build cost.")
             # Pay build cost.
             self.__supply.pay(build_cost)
@@ -554,7 +554,7 @@ class Player:
         # Check if we can pay for it (cost was cached as pending payment).
         if self.__pending_payment is not None:
             # Check build cost if present.
-            if not self._check_inventory(self.__pending_payment):
+            if not self.__check_inventory(self.__pending_payment):
                 raise ValueError("Not enough resources to pay card build cost.")
             # Pay build cost.
             self.__supply.pay(self.__pending_payment)
@@ -647,7 +647,7 @@ class Player:
         self.__game.action_spaces.move(**move_request)
         self.__supply.move(**move_request)
 
-    def _check_inventory(self, cost: tuple[tuple[int,str], ...]) -> bool:
+    def __check_inventory(self, cost: tuple[tuple[int,str], ...]) -> bool:
         """Check function verifying player has all items to pay for given cost."""
         flag = True
         for item in cost:
@@ -657,11 +657,11 @@ class Player:
                 return False
         return flag
 
-    def _check_if_persons_still_to_move(self) -> bool:
+    def __check_if_persons_still_to_move(self) -> bool:
         """Checks if player has any more 'person' pieces to place."""
-        return False
+        raise NotImplementedError()
 
-    def _init_persons(self) -> None:
+    def __init_persons(self) -> None:
         """Move a person piece from one coordinate & board to another."""
         self.__farmyard.move("person", 1, "farmyard", (1,0), "inventory", (-1,-1))
         self.__farmyard.move("person", 1, "farmyard", (2,0), "inventory", (-1,-1))

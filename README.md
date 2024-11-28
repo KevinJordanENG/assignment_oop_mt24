@@ -42,6 +42,9 @@ This file contains listed and described features of the implementation such as a
 - Alongside the `agricola` package is a test script `agricola_test.py`. This script demonstrates most major game functions and represents a sample playing of <THE ENTIRE? A FEW ROUNDS?> the game.
 - All public methods of all classes/objects include state based checks.
     - While this adds some less than pretty STATE literals to the beginning of each function, it assures encapsulation is not broken.
+- Protected vs Private methods are used in the following way in the project:
+    - Protected: These are used between objects that need to access "friend" objects data or methods but are not intended to be used by a game player/user. Encapsulation is maintained to the outside user, but the many needed tightly coupled interactions between game components is allowed.
+    - Private: These methods are truly only to be used within the object where they are implemented.
 
 
 
@@ -51,7 +54,10 @@ DONE---    1. Hide path (make global in game to be manually set)
 DONE---    2. Build patterns (flyweight etc) from notes around
 DONE---    3. Join all state action in GameState
 DONE---    4. Add state checking to all funcs
-5. Add checks of caller to make sure some methods are called only by appropriate object
+5. Enforce methods are called only by appropriate object
+    DONE---    a. Change all _ to __ methods
+    - Update all public methods to _ that should be
+    - Make context managers for class inits
 6. Make sure all private data can't be mod'ed
 7. Verify error checking throughout
 8. Add type checking to decision()

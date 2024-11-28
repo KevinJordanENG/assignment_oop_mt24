@@ -279,39 +279,38 @@ class BaseBoard(metaclass=ABCMeta):
                 "Fences cannot use general move method due to different coord system."
             )
         elif goods_type == "person":
-            self._move_person(destination_board, destination_coord, source_board, source_coord)
+            self.__move_person(destination_board, destination_coord, source_board, source_coord)
         elif goods_type == "stable":
-            self._move_stable(destination_board, destination_coord, source_board)
+            self.__move_stable(destination_board, destination_coord, source_board)
         elif goods_type == "food":
-            self._move_food(num_goods, destination_board, source_board, source_coord)
+            self.__move_food(num_goods, destination_board, source_board, source_coord)
         elif goods_type in {"sheep", "boar", "cattle"}:
-            self._move_animals(
+            self.__move_animals(
                 goods_type, num_goods, destination_board,
                 destination_coord, source_board, source_coord
             )
         elif goods_type in {"wood", "clay", "reed", "stone"}:
-            self._move_building_material(
+            self.__move_building_material(
                 goods_type, num_goods, destination_board, source_board, source_coord
             )
         elif goods_type in {"grain", "vegetable"}:
-            self._move_crops(
+            self.__move_crops(
                 goods_type, num_goods, destination_board,
                 destination_coord, source_board, source_coord
             )
 
-    def _check_pasture_size_and_stables(self) -> int:
+    def __check_pasture_size_and_stables(self) -> int:
         """
         Checks the total size of pasture & total number of stables to determine capacity of space.
         """
-# TODO: build this logic.
-        return 2
+        raise NotImplementedError()
 
 # ---------------------- Move Functions ------------------------------------------------------------
 # These functions are knowingly long as lots of integral error checking are performed within.
 # While each error check could maybe be another sub-subfunction,
 # their usage is inherently joined and decided simpler when kept together.
 
-    def _move_person(
+    def __move_person(
             self,
             destination_board: Location,
             destination_coord: Coordinate,
@@ -361,7 +360,7 @@ class BaseBoard(metaclass=ABCMeta):
             # Invalid move path.
             raise ValueError("Illegal move of 'person' requested.")
 
-    def _move_stable(
+    def __move_stable(
             self,
             destination_board: Location,
             destination_coord: Coordinate,
@@ -380,7 +379,7 @@ class BaseBoard(metaclass=ABCMeta):
             # All other move paths invalid.
             raise ValueError("Only valid move of stable is from inventory to farmyard.")
 
-    def _move_animals(
+    def __move_animals(
             self,
             goods_type: GoodsType,
             num_goods: int,
@@ -426,7 +425,7 @@ class BaseBoard(metaclass=ABCMeta):
                         and self._board[destination_coord]["goods_type"] != goods_type):
                         raise ValueError("Animals in same pasture need to be same type.")
                     # Check number.
-                    space_capacity = self._check_pasture_size_and_stables()
+                    space_capacity = self.__check_pasture_size_and_stables()
                     if self._board[destination_coord]["num_present"] + num_goods > space_capacity:
                         raise ValueError("Move requested would break capacity of pasture.")
                     self._board[destination_coord]["goods_type"] = goods_type
@@ -460,7 +459,7 @@ class BaseBoard(metaclass=ABCMeta):
                         and self._board[destination_coord]["goods_type"] != goods_type):
                         raise ValueError("Animals in same pasture need to be same type.")
                     # Check dest. value.
-                    space_capacity = self._check_pasture_size_and_stables()
+                    space_capacity = self.__check_pasture_size_and_stables()
                     if self._board[destination_coord]["num_present"] + num_goods > space_capacity:
                         raise ValueError("Move requested would break capacity of pasture.")
                     self._board[destination_coord]["goods_type"] = goods_type
@@ -497,7 +496,7 @@ class BaseBoard(metaclass=ABCMeta):
             # All other move paths invalid.
             raise ValueError(f"Illegal move of {goods_type!r} requested.")
 
-    def _move_building_material(
+    def __move_building_material(
             self,
             goods_type: GoodsType,
             num_goods: int,
@@ -522,7 +521,7 @@ class BaseBoard(metaclass=ABCMeta):
             # All other move paths invalid.
             raise ValueError(f"Illegal move of {goods_type!r} requested.")
 
-    def _move_crops(
+    def __move_crops(
             self,
             goods_type: GoodsType,
             num_goods: int,
@@ -568,7 +567,7 @@ class BaseBoard(metaclass=ABCMeta):
             # All other move paths invalid.
             raise ValueError(f"Illegal move of {goods_type!r} requested.")
 
-    def _move_food(
+    def __move_food(
             self,
             num_goods: int,
             destination_board: Location,

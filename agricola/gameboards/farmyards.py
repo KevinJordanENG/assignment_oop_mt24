@@ -31,11 +31,11 @@ class Farmyard(BaseBoard):
         # Set board type.
         self._board_type = "farmyard"
         # Set valid spaces.
-        self._init_board_spaces()
+        self.__init_board_spaces()
         # Init perimeter map.
-        self._init_perimeter()
+        self.__init_perimeter()
         # Init board spaces & perimeters.
-        self._populate_spaces()
+        self.__populate_spaces()
 
     @property
     def valid_perimeters(self) -> dict[Axis, set[Coordinate]]:
@@ -93,7 +93,7 @@ class Farmyard(BaseBoard):
         self._game.state.is_valid_state_for_func(self._game.game_state, valid_states)
         # Handle room requests.
         if space_type in {"wood_room", "clay_room", "stone_room"}:
-            valid_adj = self._check_adjacency(space_type, coord)
+            valid_adj = self.__check_adjacency(space_type, coord)
             valid_current = (self._board[coord]["space_type"] == "unused"
                              and not self._board[coord]["stabled"])
             return valid_adj and valid_current
@@ -126,7 +126,7 @@ class Farmyard(BaseBoard):
             raise ValueError("Could not determine house type.")
         return house_type
 
-    def _check_adjacency(self, space_type: SpaceType, coord: Coordinate) -> bool:
+    def __check_adjacency(self, space_type: SpaceType, coord: Coordinate) -> bool:
         """Checks that all adjacent spaces are of valid type for request."""
         row, col = coord[0], coord[1]
         # False if off the board, else check if its same type.
@@ -136,13 +136,13 @@ class Farmyard(BaseBoard):
         right = False if col+1 > 4 else (self._board[(row,col+1)]["space_type"] == space_type)
         return up or down or left or right
 
-    def _init_board_spaces(self) -> None:
+    def __init_board_spaces(self) -> None:
         """Sets the valid spaces for a farmyard."""
         self._valid_spaces = set([(0,0), (0,1), (0,2), (0,3), (0,4),
                                   (1,0), (1,1), (1,2), (1,3), (1,4),
                                   (2,0), (2,1), (2,2), (2,3), (2,4)])
 
-    def _init_perimeter(self) -> None:
+    def __init_perimeter(self) -> None:
         """Initializes the possible perimeter spaces of farmyard."""
         vertical = set([(0,0), (0,1), (0,2), (0,3), (0,4), (0,5),
                         (1,0), (1,1), (1,2), (1,3), (1,4), (1,5),
@@ -154,7 +154,7 @@ class Farmyard(BaseBoard):
         self._valid_perimeters = {"v": vertical, "h": horizontal}
         self._board_perimeters = {}
 
-    def _populate_spaces(self) -> None:
+    def __populate_spaces(self) -> None:
         """Populates initial space values for game start."""
         # Assign perimeters with blocked if starting houses in the way.
         for k, v in self._valid_perimeters.items():

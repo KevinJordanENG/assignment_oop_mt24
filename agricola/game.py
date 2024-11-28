@@ -64,14 +64,14 @@ class Game:
             # Init game state (also flyweight).
             self.__state = GameState(num_players, instance_uuid)
             # Init game controlled objects.
-            self._init_action_spaces(num_players, path=DATA_DIR_PATH)
-            self._init_tiles()
-            self._init_major_imp_cards(path=DATA_DIR_PATH)
+            self.__init_action_spaces(num_players, path=DATA_DIR_PATH)
+            self.__init_tiles()
+            self.__init_major_imp_cards(path=DATA_DIR_PATH)
             # Init both full decks of minor impr. & occupation cards.
-            minor_imps_full = self._init_minor_imp_cards(path=DATA_DIR_PATH)
-            occups_full = self._init_occup_cards(path=DATA_DIR_PATH, num_players=num_players)
+            minor_imps_full = self.__init_minor_imp_cards(path=DATA_DIR_PATH)
+            occups_full = self.__init_occup_cards(path=DATA_DIR_PATH, num_players=num_players)
             # Init players.
-            self.__player = self._init_players(num_players, minor_imps_full, occups_full)
+            self.__player = self.__init_players(num_players, minor_imps_full, occups_full)
             # Delete leftovers from these decks as remaining cards not needed after game init.
             del minor_imps_full, occups_full
             # Store instance as otherwise flyweight doesn't work.
@@ -245,7 +245,7 @@ class Game:
         }
         return move_request
 
-    def _init_action_spaces(self, num_players: int, *, path: str) -> None:
+    def __init_action_spaces(self, num_players: int, *, path: str) -> None:
         """Sets up the action spaces board depending on number of players."""
         # Check game is in valid state.
         valid_states: set[GameStates] = {"not_started"}
@@ -253,7 +253,7 @@ class Game:
         # Init.
         self.__action_spaces = ActionSpaces(self, num_players, path)
 
-    def _init_tiles(self) -> None:
+    def __init_tiles(self) -> None:
         """Initializes game store of limited 2 sided tiles."""
         # Check game is in valid state.
         valid_states: set[GameStates] = {"not_started"}
@@ -271,7 +271,7 @@ class Game:
         self.__tiles[wf] = Tiles(wf)
         self.__tiles[cs] = Tiles(cs)
 
-    def _init_major_imp_cards(self, *, path: str) -> None:
+    def __init_major_imp_cards(self, *, path: str) -> None:
         """Sets up the major improvements card deck."""
         # Check game is in valid state.
         valid_states: set[GameStates] = {"not_started"}
@@ -279,7 +279,7 @@ class Game:
         # Init.
         self.__major_imp_cards = Deck(self, "major", path=path)
 
-    def _init_minor_imp_cards(self, *, path: str) -> Deck:
+    def __init_minor_imp_cards(self, *, path: str) -> Deck:
         """Loads full minor improvements card deck, used in player init, then extras dropped."""
         # Check game is in valid state.
         valid_states: set[GameStates] = {"not_started"}
@@ -287,7 +287,7 @@ class Game:
         # Init.
         return Deck(self, "minor", path=path)
 
-    def _init_occup_cards(self, *, path: str, num_players: int) -> Deck:
+    def __init_occup_cards(self, *, path: str, num_players: int) -> Deck:
         """Loads occupation card deck per num_players, used in player init, then extras dropped."""
         # Check game is in valid state.
         valid_states: set[GameStates] = {"not_started"}
@@ -295,7 +295,7 @@ class Game:
         # Init.
         return Deck(self, "occupation", path=path, num_players=num_players)
 
-    def _init_players(self, num_players: int, minor: Deck, occup: Deck) -> Players:
+    def __init_players(self, num_players: int, minor: Deck, occup: Deck) -> Players:
         """Creates player instances for the game."""
         # Check game is in valid state.
         valid_states: set[GameStates] = {"not_started"}

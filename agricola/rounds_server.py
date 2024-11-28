@@ -176,12 +176,12 @@ class GameState:
         Takes in current state & set of valid states,
         returns True if current state is valid for function where called.
         """
-        subset_valid_states = self._filter_valid_states_by_num_players(valid_states)
+        subset_valid_states = self.__filter_valid_states_by_num_players(valid_states)
         if current_state in subset_valid_states:
             return True
         raise StateError("Illegal move attempted.")
 
-    def _filter_valid_states_by_num_players(self, valid_states: set[GameStates]) -> set[GameStates]:
+    def __filter_valid_states_by_num_players(self, valid_states: set[GameStates]) -> set[GameStates]:
         """Takes in set of normally valid states and returns subset based on num_players."""
 # TODO: Maybe check this logic as more funcs added.
         if self.__num_players == 1:

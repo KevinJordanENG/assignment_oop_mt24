@@ -39,8 +39,8 @@ class Supply:
     def __new__(cls, game: Game, *, num_food: int) -> Self:
         self = super().__new__(cls)
         self.__game = game
-        self.__limited_goods = self._init_limited_goods()
-        self.__general_goods = self._init_general_goods(num_food)
+        self.__limited_goods = self.__init_limited_goods()
+        self.__general_goods = self.__init_general_goods(num_food)
         return self
 
     @property
@@ -126,7 +126,7 @@ class Supply:
         for item in payment: # For each unique good type / number tuple.
             for _ in range(item[0]): # For num_goods of this goods type.
                 goods_type = cast(GoodsType, item[1])
-                fetch = self._get_general_good(goods_type, "inventory", (-1,-1))
+                fetch = self.__get_general_good(goods_type, "inventory", (-1,-1))
                 if fetch is None:
                     raise ValueError("Tried to pay with nonexistent good.")
                 self.remove(fetch[1])
@@ -165,7 +165,7 @@ class Supply:
             )
         # Decide if in limited or general goods.
         if goods_type in {"stable", "person"}:
-            self._move_limited(
+            self.__move_limited(
                 goods_type,
                 destination_board,
                 destination_coord,
@@ -173,7 +173,7 @@ class Supply:
                 source_coord if source_coord is not None else (-1,-1)
             )
         else:
-            self._move_general(
+            self.__move_general(
                 goods_type,
                 num_goods,
                 destination_board,
@@ -182,7 +182,7 @@ class Supply:
                 source_coord if source_coord is not None else (-1,-1)
             )
 
-    def _move_limited(
+    def __move_limited(
             self,
             goods_type: GoodsType,
             destination_board: Location,
@@ -192,7 +192,7 @@ class Supply:
         ) -> None:
         """Move routine for limited goods ('person', 'stable')."""
         # Fetch item matching type and optionally previous coords/board if provided.
-        fetch = self._get_limited_good(goods_type, source_board, source_coord)
+        fetch = self.__get_limited_good(goods_type, source_board, source_coord)
         if fetch is None:
             raise ValueError("Limited good not found at requested coordinates.")
         if goods_type == "stable":
@@ -206,7 +206,7 @@ class Supply:
         fetch["location"] = destination_board
         fetch["coordinate"] = destination_coord
 
-    def _move_general(
+    def __move_general(
             self,
             goods_type: GoodsType,
             num_goods: int,
@@ -236,7 +236,7 @@ class Supply:
                     raise ValueError("Illegal move requested.")
             # inv -> farm
             elif source_board == "inventory" and destination_board == "farmyard":
-                fetch = self._get_general_good(goods_type, source_board, source_coord)
+                fetch = self.__get_general_good(goods_type, source_board, source_coord)
                 if fetch is None:
                     raise ValueError("Good not found at requested coordinates.")
                 good, ind = fetch[0], fetch[1]
@@ -261,7 +261,7 @@ class Supply:
                 else:
                     raise ValueError("Illegal move requested.")
 
-    def _get_limited_good(
+    def __get_limited_good(
             self,
             item: GoodsType,
             source_board: Location,
@@ -275,7 +275,7 @@ class Supply:
                 return good
         return None
 
-    def _get_general_good(
+    def __get_general_good(
             self,
             item: GoodsType,
             source_board: Location,
@@ -289,7 +289,7 @@ class Supply:
                 return (good, i)
         return None
 
-    def _init_limited_goods(self) -> list[Good]:
+    def __init_limited_goods(self) -> list[Good]:
         """Initializes inventory of limited goods."""
         fence: Good = {
             "goods_type": "fence", "location": "inventory", "coordinate": (-1, -1), "axis": None
@@ -302,7 +302,7 @@ class Supply:
         persons = [deepcopy(person) for _ in range(5)]
         return fences + stables + persons
 
-    def _init_general_goods(self, num_food: int) -> list[Good]:
+    def __init_general_goods(self, num_food: int) -> list[Good]:
         """Initializes inventory of general goods, only food included at first."""
         food: Good = {"goods_type": "food", "location": "inventory", "coordinate": (-1, -1)}
         # Use of deepcopy to assure each Good is its own unique object.

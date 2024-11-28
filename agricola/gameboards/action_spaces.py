@@ -101,9 +101,9 @@ class ActionSpaces(BaseBoard):
         # Set board type.
         self._board_type = "action_space"
         # Initialize starting spaces config depending on num_players.
-        self._init_board_spaces(num_players)
+        self.__init_board_spaces(num_players)
         # Populate initial spaces.
-        self._populate_spaces(num_players, path)
+        self.__populate_spaces(num_players, path)
 
     def get_action_function(self, action: Action) -> str:
         """Gets the function (as str) associated with action key."""
@@ -189,8 +189,8 @@ class ActionSpaces(BaseBoard):
         # Check game is in valid state.
         valid_states: set[GameStates] = {"running_round_prep"}
         self._game.state.is_valid_state_for_func(self._game.game_state, valid_states)
-        line: ActionCSVLine = self._fetch_csv_line(round_num=round_num, stage=stage)
-        self._board[ROUND_COORDS[round_num-1]] = self._bundle_space_data(line)
+        line: ActionCSVLine = self.__fetch_csv_line(round_num=round_num, stage=stage)
+        self._board[ROUND_COORDS[round_num-1]] = self.__bundle_space_data(line)
         self._valid_spaces.add(ROUND_COORDS[round_num-1])
 
     def accumulate_all(self) -> None:
@@ -202,7 +202,7 @@ class ActionSpaces(BaseBoard):
             if data["accumulate"]:
                 data["num_present"] += data["accum_number"]
 
-    def _init_board_spaces(self, num_players: int) -> None:
+    def __init_board_spaces(self, num_players: int) -> None:
         """Initializes specific action spaces board based on number of players."""
         if num_players in (1,2):
             self._valid_spaces = START_COORDS["1_and_2_player"]
@@ -211,15 +211,15 @@ class ActionSpaces(BaseBoard):
         elif num_players == 4:
             self._valid_spaces = START_COORDS["1_and_2_player"] | START_COORDS["4_player_adtl"]
 
-    def _populate_spaces(self, num_players: int, path: str) -> None:
+    def __populate_spaces(self, num_players: int, path: str) -> None:
         """Populates gameboard initial coordinates with SpaceData."""
         self.__csv_data = {}
-        self._load_csv(path)
+        self.__load_csv(path)
         for space in self._valid_spaces:
-            line = self._fetch_csv_line(round_num=0, space=space)
-            self._board[space] = self._bundle_space_data(line, num_players)
+            line = self.__fetch_csv_line(round_num=0, space=space)
+            self._board[space] = self.__bundle_space_data(line, num_players)
 
-    def _find_in_csv_data(self, key: str, value: Any) -> ActionCSVLine:
+    def __find_in_csv_data(self, key: str, value: Any) -> ActionCSVLine:
         """Iterates over all action items looking in their dicts for specified k/v pair."""
         ans = None
         for line in self.__csv_data.items():
@@ -230,7 +230,7 @@ class ActionSpaces(BaseBoard):
             raise ValueError("Key / value pair for action data in CSV not found.")
         return ans
 
-    def _select_rand_round_action(self, round_num: int, stage: int) -> ActionCSVLine:
+    def __select_rand_round_action(self, round_num: int, stage: int) -> ActionCSVLine:
         """Randomly selects from remaining stage action spaces for the stage."""
         sub_set = []
         for item in self.__csv_data.items():
@@ -240,7 +240,7 @@ class ActionSpaces(BaseBoard):
         sub_set[rnd][1]["coord"] = ROUND_COORDS[round_num-1]
         return sub_set[rnd]
 
-    def _fetch_csv_line(
+    def __fetch_csv_line(
             self,
             *,
             round_num: int,
@@ -254,14 +254,14 @@ class ActionSpaces(BaseBoard):
         If space provided (Coord.), then selects the action at this space.
         """
         if space is not None and stage == 0:
-            return self._find_in_csv_data("coord", space)
+            return self.__find_in_csv_data("coord", space)
         if space is None and (0 < stage < 7):
-            return self._select_rand_round_action(round_num, stage)
+            return self.__select_rand_round_action(round_num, stage)
         raise ValueError(
             "Cannot request action space by both coordinate and stage at same time."
         )
 
-    def _bundle_space_data(self, csv_line: ActionCSVLine, num_players: int = -1) -> SpaceData:
+    def __bundle_space_data(self, csv_line: ActionCSVLine, num_players: int = -1) -> SpaceData:
         """Adds action space (once per round) from remaining actions per stage."""
         if csv_line[0] == "forest" and num_players == 1:
             csv_line[1]["num_good"] = 2
@@ -279,7 +279,7 @@ class ActionSpaces(BaseBoard):
         }
         return space_data
 
-    def _load_csv(self, path: str) -> None:
+    def __load_csv(self, path: str) -> None:
         """Handles CSV loading for actions spaces data loading."""
         with open(os.path.join(path, "actions.csv"), 'r', encoding="utf-8") as data:
             dict_reader = csv.DictReader(data)

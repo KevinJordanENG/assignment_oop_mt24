@@ -140,7 +140,7 @@ class Deck:
         self.__deck_type = deck_type
         # If we have a path, we're loading in from CSV for init.
         if path is not None:
-            self._load_csv(path, num_players)
+            self.__load_csv(path, num_players)
         # Otherwise we're dynamically creating new empty Deck somewhere within the game.
         else:
             self.__cards = {}
@@ -330,7 +330,7 @@ class Deck:
         del self.__cards[key]
         return card
 
-    def _load_major(self, path: str) -> None:
+    def __load_major(self, path: str) -> None:
         """Loads deck with all major improvement cards."""
         with open(path, 'r', encoding="utf-8") as data:
             dict_reader = csv.DictReader(data)
@@ -346,7 +346,7 @@ class Deck:
                 self.__cards[name] = card
 
 
-    def _load_minor(self, path: str) -> None:
+    def __load_minor(self, path: str) -> None:
         """Loads deck with all minor improvement cards."""
         with open(path, 'r', encoding="utf-8") as data:
             dict_reader = csv.DictReader(data)
@@ -361,7 +361,7 @@ class Deck:
                 card = MinorImprovement(self.__game, name, attributes)
                 self.__cards[name] = card
 
-    def _load_occup(self, path: str, num_players: int) -> None:
+    def __load_occup(self, path: str, num_players: int) -> None:
         """Loads deck with occupation cards based on num_players."""
         with open(path, 'r', encoding="utf-8") as data:
             dict_reader = csv.DictReader(data)
@@ -379,15 +379,15 @@ class Deck:
                 card = Occupation(self.__game, name, attributes)
                 self.__cards[name] = card
 
-    def _load_csv(self, path: str, num_players: int) -> None:
+    def __load_csv(self, path: str, num_players: int) -> None:
         """Loads card data from CSV for specified card type."""
         # Decide what deck type and how to init.
         self.__cards = {}
         if self.__deck_type == "major":
-            self._load_major(os.path.join(path, "major.csv"))
+            self.__load_major(os.path.join(path, "major.csv"))
         elif self.__deck_type == "minor":
-            self._load_minor(os.path.join(path, "minor.csv"))
+            self.__load_minor(os.path.join(path, "minor.csv"))
         elif self.__deck_type == "occupation":
-            self._load_occup(os.path.join(path, "occupation.csv"), num_players)
+            self.__load_occup(os.path.join(path, "occupation.csv"), num_players)
         else:
             raise ValueError("Received bad deck card type specifier.")
