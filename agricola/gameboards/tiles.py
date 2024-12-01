@@ -21,7 +21,11 @@ class Tiles:
     __slots__ = ("__type_pair", "__tiles_avail")
 
     def __new__(cls, type_pair: tuple[SpaceType, SpaceType]) -> Self:
-        """Constructor for tiles."""
+        """Constructor for tiles with error checking for proper context (Game only caller)."""
+        # Dynamic to avoid circular imports, and error if not being built in proper context.
+        from ..game import Game
+        if not Game._is_constructing_tiles():
+            raise TypeError("Tiles can only be instantiated by 'Game', not directly.")
         self = super().__new__(cls)
         self.__init_and_check_pair(type_pair)
         return self

@@ -19,8 +19,7 @@ class MajorImprovement(Card):
 
     def __new__(cls, game: Game, name: MajorImproveNames, attributes: dict[str, Any]) -> Self:
         """Constructor for new major improvement cards."""
-        self = super().__new__(cls)
-        self._game = game
+        self = super().__new__(cls, game)
         self._name = name
         self._attributes = attributes
         self._func = attributes["func"]

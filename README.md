@@ -43,8 +43,10 @@ This file contains listed and described features of the implementation such as a
 - All public methods of all classes/objects include state based checks.
     - While this adds some less than pretty STATE literals to the beginning of each function, it assures encapsulation is not broken.
 - Protected vs Private methods are used in the following way in the project:
-    - Protected: These are used between objects that need to access "friend" objects data or methods but are not intended to be used by a game player/user. Encapsulation is maintained to the outside user, but the many needed tightly coupled interactions between game components is allowed.
+    - Protected: These are used between objects that need to access "friend" objects' data or methods (as the 'friend' class idea works in C++) but are not intended to be used by a game player/user. Encapsulation is maintained to the outside user, but the many needed tightly coupled interactions between game components is allowed.
+        - It is noted that many game components / subclasses do not expose many public methods if any. This is intentional as Agricola is only intended to allow actions either in "Game" scope (updates affecting everything such as adding goods to all accumulation action spaces) or in "Player" scope (such as actions / decisions to move player to specific action space or choose farmyard space for development). Actions such as modifying board spaces directly, moving a player's goods without being that player, or attempting to get a new hand of 7 cards are illegal moves for a user/player to make and therefore only exposed via unified & legal "Game" or "Player" scope public methods.
     - Private: These methods are truly only to be used within the object where they are implemented.
+- Seeing the cool pattern of using context managers to ensure sub-objects are only instantiated by their proper caller object implemented by Dr. Stefano Gogioso in his 'marketplace' package, the idea and pattern was implemented throughout the project (citing sources here).
 
 
 
@@ -54,20 +56,20 @@ DONE---    1. Hide path (make global in game to be manually set)
 DONE---    2. Build patterns (flyweight etc) from notes around
 DONE---    3. Join all state action in GameState
 DONE---    4. Add state checking to all funcs
-5. Enforce methods are called only by appropriate object
-    DONE---    a. Change all _ to __ methods
-    - Update all public methods to _ that should be
-    - Make context managers for class inits
-6. Make sure all private data can't be mod'ed
+DONE---    5. Enforce methods are called only by appropriate object
+DONE---    6. Make sure all private data can't be mod'ed
 7. Verify error checking throughout
 8. Add type checking to decision()
 9. Document three categories here (type features, patterns, reusable structs)
-10. Make test script more verbose/complete
-11. Add comments as needed to all funcs
-12. Try to refactor away all `Any`s
+10. Add comments as needed to all funcs
+11. Try to refactor away all `Any`s
     - revisit decision to eval on read-in, maybe eval on func exec?
     - repass the NoEvalTokens
-13. Change all TODOs into raise NotImplementedError
-14. Clean CSV data & update with all now present funcs
-15. Remove `bag` if not used
+12. Change all TODOs into raise NotImplementedError
+13. Clean CSV data & update with all now present funcs
+DONE---    14. Remove `bag` if not used
+15. Make test script more verbose/complete
+    - Try to add functionality for full player turns / round change
 16. Test all decision funcs
+17. Surface player methods in `Game`
+18. Rename rounds_server -> state_server

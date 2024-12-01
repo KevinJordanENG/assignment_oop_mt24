@@ -6,6 +6,7 @@ as well as Supply class, the main class used to manage inventory per player.
 """
 from __future__ import annotations
 from copy import deepcopy
+from types import MappingProxyType
 from typing import NotRequired, Self, TypedDict, cast, TYPE_CHECKING
 
 from ..type_defs import Location, Coordinate, GoodsType, Axis, GameStates
@@ -37,6 +38,11 @@ class Supply:
     __general_goods: list[Good] # Supports add & remove ops.
 
     def __new__(cls, game: Game, *, num_food: int) -> Self:
+        """Constructor for player supply using Player context manager to ensure Player only init."""
+        # Dynamic to avoid circular imports, and error if not being built in proper context.
+        from ..players import Player
+        if not Player._is_constructing_supply():
+            raise TypeError("Supply can only be instantiated by 'Player', not directly.")
         self = super().__new__(cls)
         self.__game = game
         self.__limited_goods = self.__init_limited_goods()
@@ -44,16 +50,23 @@ class Supply:
         return self
 
     @property
-    def limited_goods(self) -> tuple[Good, ...]:
+    def limited_goods(self) -> tuple[MappingProxyType[str, object], ...]:
+                                                         # ^^^^^^ object use suggested by MyPy as better than 'Any' and allows
+                                                         #        varied value types to be returned for each key in TypedDict.
         """Property to show read only info of limited goods."""
-# FIXME! Need to assure read only!
-        return tuple(self.__limited_goods)
+        temp: list[MappingProxyType[str, object]] = [] # Temp list copy but used to store the MappingProxyType version of our Good TypedDict.
+        for good in self.__limited_goods:
+            temp.append(MappingProxyType(good))
+        return tuple(temp)
 
     @property
-    def general_goods(self) -> tuple[Good, ...]:
+    def general_goods(self) -> tuple[MappingProxyType[str, object], ...]:
         """Property to show read only info of general goods."""
-# FIXME! Need to assure read only!
-        return tuple(self.__general_goods)
+        # Same code pattern as limited_goods property above.
+        temp: list[MappingProxyType[str, object]] = []
+        for good in self.__general_goods:
+            temp.append(MappingProxyType(good))
+        return tuple(temp)
 
     def count(self, goods_type: GoodsType) -> int:
         """Counts number of specified goods type in current inventory."""
@@ -71,7 +84,7 @@ class Supply:
             "running_round_return_home",
             "running_round_harvest"
         }
-        self.__game.state.is_valid_state_for_func(self.__game.game_state, valid_states)
+        self.__game.state._is_valid_state_for_func(self.__game.game_state, valid_states)
         # Decide which list to search in.
         if goods_type in {"fence", "stable", "person"}:
             stock_type = self.__limited_goods
@@ -82,7 +95,7 @@ class Supply:
             count += 1 if good["goods_type"] == goods_type else 0
         return count
 
-    def add(self, item: Good) -> None:
+    def _add(self, item: Good) -> None:
         """Adds a good to (general) inventory."""
         # Check game is in valid state.
         valid_states: set[GameStates] = {
@@ -92,27 +105,14 @@ class Supply:
             "running_work_player_4",
             "current_player_decision"
         }
-        self.__game.state.is_valid_state_for_func(self.__game.game_state, valid_states)
+        self.__game.state._is_valid_state_for_func(self.__game.game_state, valid_states)
         self.__general_goods.append(item)
 
-    def remove(self, ind: int) -> None:
-        """Removes a good from (general) inventory by index."""
-        # Check game is in valid state.
-        valid_states: set[GameStates] = {
-            "running_work_player_1",
-            "running_work_player_2",
-            "running_work_player_3",
-            "running_work_player_4",
-            "current_player_decision"
-        }
-        self.__game.state.is_valid_state_for_func(self.__game.game_state, valid_states)
-        del self.__general_goods[ind]
-
-    def build_fence(self) -> None:
+    def _build_fence(self) -> None:
         """Builds fence / moves it from inventory to farmyard."""
         raise NotImplementedError()
 
-    def pay(self, payment: tuple[tuple[int,str], ...]) -> None:
+    def _pay(self, payment: tuple[tuple[int,str], ...]) -> None:
         """Routine to 'pay' for game actions, removing items from inventory."""
         # Check game is in valid state.
         valid_states: set[GameStates] = {
@@ -122,16 +122,16 @@ class Supply:
             "running_work_player_4",
             "current_player_decision"
         }
-        self.__game.state.is_valid_state_for_func(self.__game.game_state, valid_states)
+        self.__game.state._is_valid_state_for_func(self.__game.game_state, valid_states)
         for item in payment: # For each unique good type / number tuple.
             for _ in range(item[0]): # For num_goods of this goods type.
                 goods_type = cast(GoodsType, item[1])
                 fetch = self.__get_general_good(goods_type, "inventory", (-1,-1))
                 if fetch is None:
                     raise ValueError("Tried to pay with nonexistent good.")
-                self.remove(fetch[1])
+                self.__remove(fetch[1])
 
-    def move(
+    def _move(
             self,
             goods_type: GoodsType,
             num_goods: int,
@@ -157,7 +157,7 @@ class Supply:
             "running_round_return_home",
             "running_round_harvest"
         }
-        self.__game.state.is_valid_state_for_func(self.__game.game_state, valid_states)
+        self.__game.state._is_valid_state_for_func(self.__game.game_state, valid_states)
         # Fences are handled elsewhere.
         if goods_type == "fence":
             raise ValueError(
@@ -181,6 +181,19 @@ class Supply:
                 source_board if source_board is not None else "inventory",
                 source_coord if source_coord is not None else (-1,-1)
             )
+
+    def __remove(self, ind: int) -> None:
+        """Removes a good from (general) inventory by index."""
+        # Check game is in valid state.
+        valid_states: set[GameStates] = {
+            "running_work_player_1",
+            "running_work_player_2",
+            "running_work_player_3",
+            "running_work_player_4",
+            "current_player_decision"
+        }
+        self.__game.state._is_valid_state_for_func(self.__game.game_state, valid_states)
+        del self.__general_goods[ind]
 
     def __move_limited(
             self,
@@ -231,7 +244,7 @@ class Supply:
                         "coordinate": destination_coord
                     }
                     # Add good to inventory.
-                    self.add(good)
+                    self._add(good)
                 else:
                     raise ValueError("Illegal move requested.")
             # inv -> farm
@@ -242,7 +255,7 @@ class Supply:
                 good, ind = fetch[0], fetch[1]
                 if goods_type in {"grain", "vegetable"}:
                     # Remove from inventory.
-                    self.remove(ind)
+                    self.__remove(ind)
                 else:
                     raise ValueError("Illegal move requested.")
             # Some redundant error checking of board to board data transfer,

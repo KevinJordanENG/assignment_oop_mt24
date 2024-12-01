@@ -4,7 +4,8 @@ Module defining ABC 'Card' to be inherited from by
 """
 from __future__ import annotations
 from abc import ABCMeta
-from typing import Any, TYPE_CHECKING
+from types import MappingProxyType
+from typing import Any, TYPE_CHECKING, Mapping, Self
 
 from ..type_defs import MajorImproveNames, MinorImproveNames, OccupationNames, GameStates
 if TYPE_CHECKING:
@@ -25,6 +26,16 @@ class Card(metaclass=ABCMeta):
     _attributes: dict[str, Any]
     _played: bool
 
+    def __new__(cls, game: Game) -> Self:
+        """Simple constructor just to set 'Game' as needed & context check."""
+        # Dynamic to avoid circular imports, and error if not being built in proper context.
+        from .deck import Deck
+        if not Deck._is_constructing_cards():
+            raise TypeError("Cards can only be instantiated by 'Deck', not directly.")
+        self = super().__new__(cls)
+        self._game = game
+        return self
+
     @property
     def name(self) -> CardDictKeys:
         """Get name of card."""
@@ -36,12 +47,11 @@ class Card(metaclass=ABCMeta):
         return self._played
 
     @property
-    def attributes(self) -> dict[str, Any]:
+    def attributes(self) -> Mapping[str, Any]:
         """Property returning read only view of this card's various data."""
-# FIXME! Need to make sure read only
-        return self._attributes
+        return MappingProxyType(self._attributes)
 
-    def set_played(self) -> None:
+    def _set_played(self) -> None:
         """Changes this card's state to played."""
         # Check game is in valid state.
         valid_states: set[GameStates] = {
@@ -51,5 +61,5 @@ class Card(metaclass=ABCMeta):
             "running_work_player_4",
             "current_player_decision"
         }
-        self._game.state.is_valid_state_for_func(self._game.game_state, valid_states)
+        self._game.state._is_valid_state_for_func(self._game.game_state, valid_states)
         self._played = True

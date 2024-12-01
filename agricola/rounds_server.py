@@ -43,6 +43,12 @@ class GameState:
     """Context variable allowing all server state managers to update/read game state."""
 
     def __new__(cls, num_players: int, game_uuid: str) -> Self:
+        """Constructor using flyweight pattern & context manager validation for init only by 'Game'."""
+        # Dynamic to avoid circular imports, and error if not being built in proper context.
+        from .game import Game
+        if not Game._is_constructing_state_server():
+            raise TypeError("GameState can only be instantiated by 'Game', not directly.")
+        # Try to get state by game uuid if cached by flyweight pattern instance cache.
         self = GameState.__state_servers.get(game_uuid)
         if self is None:
             # Create instance if not already existent.
@@ -69,7 +75,7 @@ class GameState:
         """Returns the id of the currently active player."""
         return self.__active_player_id
 
-    def play_next_player_actions(self) -> None:
+    def _play_next_player_actions(self) -> None:
         """Sets state to next player for them to take actions."""
         # Set state as appropriate.
         if (self.STATE.get() == "running_round_prep"
@@ -84,7 +90,7 @@ class GameState:
         else:
             raise StateError("Invalid state change action requested.")
 
-    def set_current_player_decision(self) -> None:
+    def _set_current_player_decision(self) -> None:
         """Sets state to decision mode if current player decision is required."""
         # Check valid state.
         valid_states: set[GameStates] = {
@@ -93,16 +99,16 @@ class GameState:
             "running_work_player_3",
             "running_work_player_4"
         }
-        self.is_valid_state_for_func(self.STATE.get(), valid_states)
+        self._is_valid_state_for_func(self.STATE.get(), valid_states)
         self.STATE.set("current_player_decision")
 
-    def start_round(self, action_spaces: ActionSpaces, players: Players) -> None:
+    def _start_round(self, action_spaces: ActionSpaces, players: Players) -> None:
         """Method to start the round."""
         # Check valid state.
         valid_states: set[GameStates] = {
             "running_game", "running_round_return_home", "running_round_harvest"
         }
-        self.is_valid_state_for_func(self.STATE.get(), valid_states)
+        self._is_valid_state_for_func(self.STATE.get(), valid_states)
         # Increment round & phase.
         self.__round_number += 1
         if self.__round_number in PhaseChangeRounds:
@@ -110,13 +116,13 @@ class GameState:
         # Set state as appropriate.
         self.STATE.set("running_round_prep")
         # Perform preparation actions.
-        action_spaces.add_action_space(
+        action_spaces._add_action_space(
             self.round_number,
             self.phase_number
         )
-        action_spaces.accumulate_all()
+        action_spaces._accumulate_all()
         for player in players.players_tup:
-            player.get_goods_from_future_action_spaces(self.round_number)
+            player._get_goods_from_future_action_spaces(self.round_number)
 
 # TODO: below relate to RETURNING HOME ________________________
     def _return_people_home(self) -> None:
@@ -140,15 +146,15 @@ class GameState:
     def _animal_breeding(self) -> None:
         """"""
 
-    def start(self) -> None:
+    def _start(self) -> None:
         """Starts game & changes game state."""
         # Check valid state.
         valid_states: set[GameStates] = {"not_started"}
-        self.is_valid_state_for_func(self.STATE.get(), valid_states)
+        self._is_valid_state_for_func(self.STATE.get(), valid_states)
         self.STATE.set("running_game")
         self.__phase_number = 1
 
-    def stop(self) -> None:
+    def _stop(self) -> None:
         """Stops the game early."""
         # Check valid state.
         valid_states: set[GameStates] = {
@@ -162,12 +168,12 @@ class GameState:
             "running_work_player_4",
             "current_player_decision"
         }
-        self.is_valid_state_for_func(self.STATE.get(), valid_states)
+        self._is_valid_state_for_func(self.STATE.get(), valid_states)
         self.STATE.set("stopped_early")
         self.__round_number = 0
         self.__phase_number = 0
 
-    def is_valid_state_for_func(
+    def _is_valid_state_for_func(
             self,
             current_state: GameStates,
             valid_states: set[GameStates]

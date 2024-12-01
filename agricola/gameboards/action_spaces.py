@@ -57,26 +57,26 @@ FuncNoEval = set([
     "PLOW+SOW",
     "RENOVATION+BUILD_FENCES",
     "GET_MARKET_GOODS",
-    "self.get_goods(action='forest')",
-    "self.get_goods(action='grain_seeds')",
-    "self.get_goods(action='day_laborer')",
-    "self.get_goods(action='clay_pit')",
-    "self.get_goods(action='reed_bank')",
-    "self.get_goods(action='fishing')",
-    "self.get_goods(action='western_quarry')",
-    "self.get_goods(action='vegetable_seeds')",
-    "self.get_goods(action='eastern_quarry')",
-    "self.get_goods(action='copse')",
-    "self.get_goods(action='grove')",
-    "self.get_goods(action='3_hollow')",
-    "self.get_goods(action='4_hollow')",
-    "self.get_goods(action='traveling_players')",
-    "self.build_rooms_and_or_stables()",
-    "self.take_start_player_token()",
-    "self.plow()",
-    "self.choose_occupation_to_play(action='lessons')",
-    "self.choose_occupation_to_play(action='3_lessons')",
-    "self.choose_occupation_to_play(action='4_lessons')"
+    "get_goods(action='forest')",
+    "get_goods(action='grain_seeds')",
+    "get_goods(action='day_laborer')",
+    "get_goods(action='clay_pit')",
+    "get_goods(action='reed_bank')",
+    "get_goods(action='fishing')",
+    "get_goods(action='western_quarry')",
+    "get_goods(action='vegetable_seeds')",
+    "get_goods(action='eastern_quarry')",
+    "get_goods(action='copse')",
+    "get_goods(action='grove')",
+    "get_goods(action='3_hollow')",
+    "get_goods(action='4_hollow')",
+    "get_goods(action='traveling_players')",
+    "build_rooms_and_or_stables()",
+    "take_start_player_token()",
+    "plow()",
+    "choose_occupation_to_play(action='lessons')",
+    "choose_occupation_to_play(action='3_lessons')",
+    "choose_occupation_to_play(action='4_lessons')"
 ])
 """Set of functions used to call action space effects, stored in dict as str."""
 
@@ -95,7 +95,12 @@ class ActionSpaces(BaseBoard):
     __csv_data: dict[Action, dict[str, Any]]
 
     def __init__(self, game: Game, num_players: int, path: str) -> None:
-        """Initializer for Action Spaces gameboard."""
+        """Initializer for Action Spaces gameboard, only allowing init from proper context."""
+        # Dynamic to avoid circular imports, and error if not being built in proper context.
+        from ..game import Game
+        if not Game._is_constructing_action_spaces():
+            raise TypeError("ActionSpaces board can only be instantiated by 'Game', not directly.")
+        # Init BaseBoard.
         super().__init__()
         self._game = game
         # Set board type.
@@ -121,7 +126,7 @@ class ActionSpaces(BaseBoard):
             "running_round_return_home",
             "running_round_harvest"
         }
-        self._game.state.is_valid_state_for_func(self._game.game_state, valid_states)
+        self._game.state._is_valid_state_for_func(self._game.game_state, valid_states)
         return str(self.__csv_data[action]["func"])
 
     def get_action_func_output(self, action: Action) -> Any: # Any used here as output is varied.
@@ -140,7 +145,7 @@ class ActionSpaces(BaseBoard):
             "running_round_return_home",
             "running_round_harvest"
         }
-        self._game.state.is_valid_state_for_func(self._game.game_state, valid_states)
+        self._game.state._is_valid_state_for_func(self._game.game_state, valid_states)
         return self.__csv_data[action]["output"]
 
     def get_action_func_cost(self, action: Action) -> Any: # Any used here as cost is varied.
@@ -159,7 +164,7 @@ class ActionSpaces(BaseBoard):
             "running_round_return_home",
             "running_round_harvest"
         }
-        self._game.state.is_valid_state_for_func(self._game.game_state, valid_states)
+        self._game.state._is_valid_state_for_func(self._game.game_state, valid_states)
         return self.__csv_data[action]["costs"]
 
     def get_space_data_from_action(self, action: Action) -> tuple[Coordinate, SpaceData] | None:
@@ -178,26 +183,26 @@ class ActionSpaces(BaseBoard):
             "running_round_return_home",
             "running_round_harvest"
         }
-        self._game.state.is_valid_state_for_func(self._game.game_state, valid_states)
+        self._game.state._is_valid_state_for_func(self._game.game_state, valid_states)
         for key, value in self._board.items():
             if value["action"] == action:
                 return (key, value)
         return None
 
-    def add_action_space(self, round_num: int, stage: int) -> None:
-        """Public method to add action space."""
+    def _add_action_space(self, round_num: int, stage: int) -> None:
+        """Adds action space to board once each new round."""
         # Check game is in valid state.
         valid_states: set[GameStates] = {"running_round_prep"}
-        self._game.state.is_valid_state_for_func(self._game.game_state, valid_states)
+        self._game.state._is_valid_state_for_func(self._game.game_state, valid_states)
         line: ActionCSVLine = self.__fetch_csv_line(round_num=round_num, stage=stage)
         self._board[ROUND_COORDS[round_num-1]] = self.__bundle_space_data(line)
         self._valid_spaces.add(ROUND_COORDS[round_num-1])
 
-    def accumulate_all(self) -> None:
+    def _accumulate_all(self) -> None:
         """Increases all accumulation spaces' goods by their respective amount."""
         # Check game is in valid state.
         valid_states: set[GameStates] = {"running_round_prep"}
-        self._game.state.is_valid_state_for_func(self._game.game_state, valid_states)
+        self._game.state._is_valid_state_for_func(self._game.game_state, valid_states)
         for data in self._board.values():
             if data["accumulate"]:
                 data["num_present"] += data["accum_number"]

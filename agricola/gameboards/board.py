@@ -3,7 +3,8 @@ Module defining ABC BaseBoard to be inherited from by 'farmyards' and 'action_sp
 """
 from __future__ import annotations
 from abc import ABCMeta, abstractmethod
-from typing import TypedDict, TYPE_CHECKING
+from types import MappingProxyType
+from typing import Mapping, TypedDict, TYPE_CHECKING
 
 from ..type_defs import Coordinate, Location, GoodsType, SpaceType, Action, GameStates
 if TYPE_CHECKING:
@@ -60,22 +61,45 @@ class BaseBoard(metaclass=ABCMeta):
         return self._board_type
 
     @property
-    def valid_spaces(self) -> set[Coordinate]:
+    def valid_spaces(self) -> frozenset[Coordinate]:
         """Property to return read only view of valid spaces in current board."""
-# FIXME! Need to make sure read only
-        return self._valid_spaces
+        return frozenset(self._valid_spaces)
 
     @property
-    def board(self) -> dict[Coordinate, SpaceData]:
+    def board(self) -> Mapping[Coordinate, MappingProxyType[str, object]]:
         """Property returning read only view of current board spaces and their data."""
-# FIXME! Need to make sure read only
-        return self._board
+        # We need to make sure all TypedDicts of SpaceData are read only MappingProxyTypes (M.P.T.).
+        temp: dict[Coordinate, MappingProxyType[str, object]] = {}
+        for coord, space_data in self._board.items():
+            temp[coord] = MappingProxyType(space_data)
+        # We also need the full dict to be a M.P.T. so keys cannot be modified.
+        return MappingProxyType(temp)
 
     @property
-    def open_spaces(self) -> set[Coordinate]:
+    def open_spaces(self) -> frozenset[Coordinate]:
         """Returns read only view of open spaces on current board, delegates to 'is_occupied()'."""
-# FIXME! Need to make sure read only
-        return set(coord for coord in self._valid_spaces if not self.is_occupied(coord))
+        return frozenset(coord for coord in self._valid_spaces if not self.is_occupied(coord))
+
+    def get_space_type(self, coord: Coordinate) -> SpaceType:
+        """Returns type of space of supplied coordinates."""
+        # Check game is in valid state.
+        valid_states: set[GameStates] = {
+            "not_started",
+            "finished",
+            "running_game",
+            "running_round_prep",
+            "running_work_player_1",
+            "running_work_player_2",
+            "running_work_player_3",
+            "running_work_player_4",
+            "current_player_decision",
+            "running_round_return_home",
+            "running_round_harvest"
+        }
+        self._game.state._is_valid_state_for_func(self._game.game_state, valid_states)
+        if coord not in self._valid_spaces:
+            raise KeyError("Coordinate is not valid on this board.")
+        return self._board[coord]["space_type"]
 
     def is_occupied(self, coord: Coordinate) -> bool:
         """Checks if supplied coordinates is occupied."""
@@ -93,7 +117,7 @@ class BaseBoard(metaclass=ABCMeta):
             "running_round_return_home",
             "running_round_harvest"
         }
-        self._game.state.is_valid_state_for_func(self._game.game_state, valid_states)
+        self._game.state._is_valid_state_for_func(self._game.game_state, valid_states)
         if coord not in self._valid_spaces:
             raise KeyError("Coordinate is not valid on this board.")
         return self._board[coord]["occupied"]
@@ -114,7 +138,7 @@ class BaseBoard(metaclass=ABCMeta):
             "running_round_return_home",
             "running_round_harvest"
         }
-        self._game.state.is_valid_state_for_func(self._game.game_state, valid_states)
+        self._game.state._is_valid_state_for_func(self._game.game_state, valid_states)
         if coord not in self._valid_spaces:
             raise KeyError("Coordinate is not valid on this board.")
         return self._board[coord]["child"]
@@ -135,52 +159,10 @@ class BaseBoard(metaclass=ABCMeta):
             "running_round_return_home",
             "running_round_harvest"
         }
-        self._game.state.is_valid_state_for_func(self._game.game_state, valid_states)
+        self._game.state._is_valid_state_for_func(self._game.game_state, valid_states)
         if coord not in self._valid_spaces:
             raise KeyError("Coordinate is not valid on this board.")
         return self._board[coord]["stabled"]
-
-    def get_space_type(self, coord: Coordinate) -> SpaceType:
-        """Returns type of space of supplied coordinates."""
-        # Check game is in valid state.
-        valid_states: set[GameStates] = {
-            "not_started",
-            "finished",
-            "running_game",
-            "running_round_prep",
-            "running_work_player_1",
-            "running_work_player_2",
-            "running_work_player_3",
-            "running_work_player_4",
-            "current_player_decision",
-            "running_round_return_home",
-            "running_round_harvest"
-        }
-        self._game.state.is_valid_state_for_func(self._game.game_state, valid_states)
-        if coord not in self._valid_spaces:
-            raise KeyError("Coordinate is not valid on this board.")
-        return self._board[coord]["space_type"]
-
-    def get_goods_type(self, coord: Coordinate) -> GoodsType | None:
-        """Returns type of goods on the space of supplied coordinates if present, else None."""
-        # Check game is in valid state.
-        valid_states: set[GameStates] = {
-            "not_started",
-            "finished",
-            "running_game",
-            "running_round_prep",
-            "running_work_player_1",
-            "running_work_player_2",
-            "running_work_player_3",
-            "running_work_player_4",
-            "current_player_decision",
-            "running_round_return_home",
-            "running_round_harvest"
-        }
-        self._game.state.is_valid_state_for_func(self._game.game_state, valid_states)
-        if coord not in self._valid_spaces:
-            raise KeyError("Coordinate is not valid on this board.")
-        return self._board[coord]["goods_type"]
 
     def is_accumulate(self, coord: Coordinate) -> bool:
         """Checks if supplied coordinates is an accumulation space."""
@@ -198,10 +180,31 @@ class BaseBoard(metaclass=ABCMeta):
             "running_round_return_home",
             "running_round_harvest"
         }
-        self._game.state.is_valid_state_for_func(self._game.game_state, valid_states)
+        self._game.state._is_valid_state_for_func(self._game.game_state, valid_states)
         if coord not in self._valid_spaces:
             raise KeyError("Coordinate is not valid on this board.")
         return self._board[coord]["accumulate"]
+
+    def get_goods_type(self, coord: Coordinate) -> GoodsType | None:
+        """Returns type of goods on the space of supplied coordinates if present, else None."""
+        # Check game is in valid state.
+        valid_states: set[GameStates] = {
+            "not_started",
+            "finished",
+            "running_game",
+            "running_round_prep",
+            "running_work_player_1",
+            "running_work_player_2",
+            "running_work_player_3",
+            "running_work_player_4",
+            "current_player_decision",
+            "running_round_return_home",
+            "running_round_harvest"
+        }
+        self._game.state._is_valid_state_for_func(self._game.game_state, valid_states)
+        if coord not in self._valid_spaces:
+            raise KeyError("Coordinate is not valid on this board.")
+        return self._board[coord]["goods_type"]
 
     def get_num_goods_present(self, coord: Coordinate) -> int:
         """Gets number of goods present on space if any, else 0."""
@@ -219,12 +222,12 @@ class BaseBoard(metaclass=ABCMeta):
             "running_round_return_home",
             "running_round_harvest"
         }
-        self._game.state.is_valid_state_for_func(self._game.game_state, valid_states)
+        self._game.state._is_valid_state_for_func(self._game.game_state, valid_states)
         if coord not in self._valid_spaces:
             raise KeyError("Coordinate is not valid on this board.")
         return self._board[coord]["num_present"]
 
-    def is_action(self, coord: Coordinate) -> Action | None:
+    def get_action(self, coord: Coordinate) -> Action | None:
         """Gets action for given coords, or None if not action space."""
         # Check game is in valid state.
         valid_states: set[GameStates] = {
@@ -240,12 +243,12 @@ class BaseBoard(metaclass=ABCMeta):
             "running_round_return_home",
             "running_round_harvest"
         }
-        self._game.state.is_valid_state_for_func(self._game.game_state, valid_states)
+        self._game.state._is_valid_state_for_func(self._game.game_state, valid_states)
         if coord not in self._valid_spaces:
             raise KeyError("Coordinate is not valid on this board.")
         return self._board[coord]["action"]
 
-    def move(
+    def _move(
             self,
             goods_type: GoodsType,
             num_goods: int,
@@ -273,7 +276,7 @@ class BaseBoard(metaclass=ABCMeta):
             "running_round_return_home",
             "running_round_harvest"
         }
-        self._game.state.is_valid_state_for_func(self._game.game_state, valid_states)
+        self._game.state._is_valid_state_for_func(self._game.game_state, valid_states)
         if goods_type == "fence":
             raise ValueError (
                 "Fences cannot use general move method due to different coord system."

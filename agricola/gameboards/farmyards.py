@@ -3,7 +3,8 @@ Farmyards module containing concrete implementation of individual player boards.
 Uses BaseBoard ABC to handle unified board logic.
 """
 from __future__ import annotations
-from typing import TypedDict, cast, TYPE_CHECKING
+from types import MappingProxyType
+from typing import Mapping, TypedDict, cast, TYPE_CHECKING
 
 from .board import BaseBoard, SpaceData
 from ..type_defs import Coordinate, SpaceType, Axis, GameStates
@@ -26,6 +27,10 @@ class Farmyard(BaseBoard):
 
     def __init__(self, game: Game) -> None:
         """Initializer for Farmyard gameboard."""
+        # Dynamic to avoid circular imports, and error if not being built in proper context.
+        from ..players import Player
+        if not Player._is_constructing_farmyard():
+            raise TypeError("Farmyard can only be instantiated by 'Player', not directly.")
         super().__init__()
         self._game = game
         # Set board type.
@@ -38,43 +43,39 @@ class Farmyard(BaseBoard):
         self.__populate_spaces()
 
     @property
-    def valid_perimeters(self) -> dict[Axis, set[Coordinate]]:
+    def valid_perimeters(self) -> Mapping[Axis, frozenset[Coordinate]]:
         """Property to return read only view of valid perimeter spaces in current board."""
-# FIXME! Need to make sure read only
-        return self._valid_perimeters
+        # Need sets to be frozen.
+        temp: dict[Axis, frozenset[Coordinate]] = {}
+        for key, val in self._valid_perimeters.items():
+            temp[key] = frozenset(val)
+        # Also need mapping so not modifications to Axis dict.
+        return MappingProxyType(temp)
 
     @property
-    def board_perimeters(self) -> dict[tuple[Axis, Coordinate], PerimeterData]:
+    def board_perimeters(self) -> Mapping[tuple[Axis, Coordinate], MappingProxyType[str, object]]:
         """Property returning read only view of current board perimeter spaces and their data."""
-# FIXME! Need to make sure read only
-        return self._board_perimeters
+        # Need to have PerimeterData TypedDict be M.P.T. so data inside is read only.
+        temp: dict[tuple[Axis, Coordinate], MappingProxyType[str, object]] = {}
+        for spot, data in self._board_perimeters.items():
+            temp[spot] = MappingProxyType(data)
+        # Need full dict to also be M.P.T.
+        return MappingProxyType(temp)
 
     @property
-    def open_perimeters(self) -> dict[Axis, set[Coordinate]]:
+    def open_perimeters(self) -> Mapping[Axis, frozenset[Coordinate]]:
         """Returns read only view of open perimeter spaces."""
-# FIXME! Need to make sure read only
+        # First, we have to get the open perimeters.
         sub_dict: dict[Axis, set[Coordinate]] = {"v": set(), "h": set()}
         for tup, data in self._board_perimeters.items():
             if not data["occupied"]:
                 sub_dict[tup[0]].add(tup[1])
-        return sub_dict
-
-    def build_fence(self) -> None:
-        """Performs build fence action. Can only move fence from inventory to farmyard."""
-        raise NotImplementedError()
-
-    def change_space_type(self, space_type: SpaceType, coord: Coordinate) -> None:
-        """Changes space type (assumes the check_space_change_validity() func already called)."""
-        # Check game is in valid state.
-        valid_states: set[GameStates] = {
-            "running_work_player_1",
-            "running_work_player_2",
-            "running_work_player_3",
-            "running_work_player_4",
-            "current_player_decision"
-        }
-        self._game.state.is_valid_state_for_func(self._game.game_state, valid_states)
-        self._board[coord]["space_type"] = space_type
+        # Then, need sets to be frozen.
+        temp: dict[Axis, frozenset[Coordinate]] = {}
+        for key, val in sub_dict.items():
+            temp[key] = frozenset(val)
+        # Also need mapping so not modifications to Axis dict.
+        return MappingProxyType(temp)
 
     def check_space_change_validity(self, space_type: SpaceType, coord: Coordinate) -> bool:
         """Returns bool if requested new space type is valid at specified coord."""
@@ -90,7 +91,7 @@ class Farmyard(BaseBoard):
             "running_round_return_home",
             "running_round_harvest"
         }
-        self._game.state.is_valid_state_for_func(self._game.game_state, valid_states)
+        self._game.state._is_valid_state_for_func(self._game.game_state, valid_states)
         # Handle room requests.
         if space_type in {"wood_room", "clay_room", "stone_room"}:
             valid_adj = self.__check_adjacency(space_type, coord)
@@ -117,7 +118,7 @@ class Farmyard(BaseBoard):
             "running_round_return_home",
             "running_round_harvest"
         }
-        self._game.state.is_valid_state_for_func(self._game.game_state, valid_states)
+        self._game.state._is_valid_state_for_func(self._game.game_state, valid_states)
         house_type = None
         for space_data in self._board.values():
             if space_data["space_type"] in {"wood_room", "clay_room", "stone_room"}:
@@ -125,6 +126,23 @@ class Farmyard(BaseBoard):
         if house_type is None:
             raise ValueError("Could not determine house type.")
         return house_type
+
+    def _build_fence(self) -> None:
+        """Performs build fence action. Can only move fence from inventory to farmyard."""
+        raise NotImplementedError()
+
+    def _change_space_type(self, space_type: SpaceType, coord: Coordinate) -> None:
+        """Changes space type (assumes the check_space_change_validity() func already called)."""
+        # Check game is in valid state.
+        valid_states: set[GameStates] = {
+            "running_work_player_1",
+            "running_work_player_2",
+            "running_work_player_3",
+            "running_work_player_4",
+            "current_player_decision"
+        }
+        self._game.state._is_valid_state_for_func(self._game.game_state, valid_states)
+        self._board[coord]["space_type"] = space_type
 
     def __check_adjacency(self, space_type: SpaceType, coord: Coordinate) -> bool:
         """Checks that all adjacent spaces are of valid type for request."""

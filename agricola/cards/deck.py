@@ -5,11 +5,13 @@ Allows for bulk operations on cards such as init.
 """
 
 from __future__ import annotations
+from contextlib import contextmanager
 import os
 import csv
 import ast
 import random
-from typing import Any, Self, cast, get_args, TYPE_CHECKING
+from types import MappingProxyType
+from typing import Any, ClassVar, Iterator, Mapping, Self, cast, get_args, TYPE_CHECKING
 
 from .major_improvements import MajorImprovement
 from .minor_improvements import MinorImprovement
@@ -129,18 +131,45 @@ class Deck:
     Deck class is a composition class allowing uniform batch operations on card types.
     """
 
+    __is_constructing_cards: ClassVar[bool] = False
+
+    @staticmethod
+    def _is_constructing_cards() -> bool:
+        """Class wide flag ensuring Cards are only instantiated by Deck via context manager."""
+        return Deck.__is_constructing_cards
+
+    @staticmethod
+    @contextmanager
+    def __constructing_cards() -> Iterator[None]:
+        """
+        Context manager helping ensure objects are only instantiated by 'Deck' not Agricola user directly.
+        """
+        assert not Deck.__is_constructing_cards
+        Deck.__is_constructing_cards = True
+        try:
+            yield None
+        finally:
+            Deck.__is_constructing_cards = False
+
     __game: Game
     __deck_type: str
     __cards: dict[CardDictKeys, MajorImprovement|MinorImprovement|Occupation]
 
     def __new__(cls, game: Game, deck_type: str, *, path: str | None, num_players: int = 2) -> Self:
-        """Constructor for decks."""
+        """Constructor for decks using Game's context manager to ensure not build directly."""
+        # Dynamic to avoid circular imports, and error if not being built in proper context.
+        from ..game import Game
+        if not Game._is_constructing_decks():
+            raise TypeError("Decks can only be instantiated by 'Game' or 'Player', not directly.")
+        # Construct.
         self = super().__new__(cls)
         self.__game = game
         self.__deck_type = deck_type
         # If we have a path, we're loading in from CSV for init.
         if path is not None:
-            self.__load_csv(path, num_players)
+            # Set manager for valid Card creation context.
+            with Deck.__constructing_cards():
+                self.__load_csv(path, num_players)
         # Otherwise we're dynamically creating new empty Deck somewhere within the game.
         else:
             self.__cards = {}
@@ -152,32 +181,9 @@ class Deck:
         return self.__deck_type
 
     @property
-    def cards(self) -> dict[CardDictKeys, MajorImprovement|MinorImprovement|Occupation]:
+    def cards(self) -> Mapping[CardDictKeys, MajorImprovement|MinorImprovement|Occupation]:
         """Property to return read only view of cards in this deck object."""
-# FIXME: Need to make sure read only
-        return self.__cards
-
-    def get_seven_rand_cards(self) -> Deck:
-        """
-        Returns a deck of 7 random cards for player init.
-        
-        Also removes these cards from global/game scope so no 2 players can get the same card.
-        """
-        # Check game is in valid state.
-        valid_states: set[GameStates] = {"not_started"}
-        self.__game.state.is_valid_state_for_func(self.__game.game_state, valid_states)
-        # Only applies to occupations & minor improvements so check for this.
-        if self.__deck_type == "major":
-            raise ValueError("Getting 7 cards is for occupations & minor improvements only.")
-        # Create a new (empty) deck to return.
-        seven_cards = Deck(self.__game, self.deck_type, path=None)
-        # Get 7 random cards.
-        rand_keys: list[CardDictKeys] = random.sample(list(self.__cards.keys()), 7)
-        # Add them to new deck & remove from main deck.
-        for key in rand_keys:
-            seven_cards.add_card_to_deck(key, self.__cards[key])
-            self.__cards.pop(key)
-        return seven_cards
+        return MappingProxyType(self.__cards)
 
     def is_in_deck(self, card_name: CardDictKeys) -> bool:
         """Returns bool if card of specified key exists in deck or not."""
@@ -195,34 +201,11 @@ class Deck:
             "running_round_return_home",
             "running_round_harvest"
         }
-        self.__game.state.is_valid_state_for_func(self.__game.game_state, valid_states)
+        self.__game.state._is_valid_state_for_func(self.__game.game_state, valid_states)
         for key in self.__cards:
             if key == card_name:
                 return True
         return False
-
-    def add_card_to_deck(
-            self,
-            key: CardDictKeys,
-            card: MajorImprovement|MinorImprovement|Occupation
-        ) -> None:
-        """Adds card to deck from attributes & names."""
-        # Check game is in valid state.
-        valid_states: set[GameStates] = {
-            "not_started",
-            "running_game",
-            "running_round_prep",
-            "running_work_player_1",
-            "running_work_player_2",
-            "running_work_player_3",
-            "running_work_player_4",
-            "current_player_decision",
-            "running_round_return_home",
-            "running_round_harvest"
-        }
-        self.__game.state.is_valid_state_for_func(self.__game.game_state, valid_states)
-# FIXME: add error checking that right card type for deck.
-        self.__cards[key] = card
 
     def get_prereqs_minor_imp(
             self,
@@ -231,7 +214,7 @@ class Deck:
         """Gets prerequisites for playing minor improvement."""
         # Check game is in valid state.
         valid_states: set[GameStates] = {"current_player_decision"}
-        self.__game.state.is_valid_state_for_func(self.__game.game_state, valid_states)
+        self.__game.state._is_valid_state_for_func(self.__game.game_state, valid_states)
         return self.__cards[key].attributes["prereq"]
 
     def get_build_cost(self, key: CardDictKeys) -> Any: # Cost is varied.
@@ -250,7 +233,7 @@ class Deck:
             "running_round_return_home",
             "running_round_harvest"
         }
-        self.__game.state.is_valid_state_for_func(self.__game.game_state, valid_states)
+        self.__game.state._is_valid_state_for_func(self.__game.game_state, valid_states)
         if self.deck_type == "occupation":
             raise ValueError("Occupations do not have 'build_cost' attribute.")
         return self.__cards[key].attributes["build_cost"]
@@ -271,22 +254,8 @@ class Deck:
             "running_round_return_home",
             "running_round_harvest"
         }
-        self.__game.state.is_valid_state_for_func(self.__game.game_state, valid_states)
+        self.__game.state._is_valid_state_for_func(self.__game.game_state, valid_states)
         return self.__cards[key].attributes["func_cost"]
-
-    def play_card(self, key: CardDictKeys) -> str | None:
-        """Plays card from deck."""
-        # Check game is in valid state.
-        valid_states: set[GameStates] = {
-            "running_work_player_1",
-            "running_work_player_2",
-            "running_work_player_3",
-            "running_work_player_4",
-            "current_player_decision"
-        }
-        self.__game.state.is_valid_state_for_func(self.__game.game_state, valid_states)
-        self.__cards[key].set_played()
-        return self.__cards[key].func
 
     def count_num_played(self) -> int:
         """Counts the number of cards played in given hand/deck."""
@@ -303,19 +272,78 @@ class Deck:
             "running_round_return_home",
             "running_round_harvest"
         }
-        self.__game.state.is_valid_state_for_func(self.__game.game_state, valid_states)
+        self.__game.state._is_valid_state_for_func(self.__game.game_state, valid_states)
         count = 0
         for card in self.__cards.values():
             if card.played:
                 count += 1
         return count
 
-    def pop(self, key: CardDictKeys) -> MajorImprovement|MinorImprovement|Occupation:
+    def _get_seven_rand_cards(self) -> Deck:
+        """
+        Returns a deck of 7 random cards for player init.
+        
+        Also removes these cards from global/game scope so no 2 players can get the same card.
+        """
+        # Check game is in valid state.
+        valid_states: set[GameStates] = {"not_started"}
+        self.__game.state._is_valid_state_for_func(self.__game.game_state, valid_states)
+        # Only applies to occupations & minor improvements so check for this.
+        if self.__deck_type == "major":
+            raise ValueError("Getting 7 cards is for occupations & minor improvements only.")
+        # Create a new (empty) deck to return. Only ever called in Game init so will be in proper context there.
+        seven_cards = Deck(self.__game, self.deck_type, path=None)
+        # Get 7 random cards.
+        rand_keys: list[CardDictKeys] = random.sample(list(self.__cards.keys()), 7)
+        # Add them to new deck & remove from main deck.
+        for key in rand_keys:
+            seven_cards._add_card_to_deck(key, self.__cards[key])
+            self.__cards.pop(key)
+        return seven_cards
+
+    def _add_card_to_deck(
+            self,
+            key: CardDictKeys,
+            card: MajorImprovement|MinorImprovement|Occupation
+        ) -> None:
+        """Adds card to deck from attributes & names."""
+        # Check game is in valid state.
+        valid_states: set[GameStates] = {
+            "not_started",
+            "running_game",
+            "running_round_prep",
+            "running_work_player_1",
+            "running_work_player_2",
+            "running_work_player_3",
+            "running_work_player_4",
+            "current_player_decision",
+            "running_round_return_home",
+            "running_round_harvest"
+        }
+        self.__game.state._is_valid_state_for_func(self.__game.game_state, valid_states)
+# FIXME: add error checking that right card type for deck.
+        self.__cards[key] = card
+
+    def _play_card(self, key: CardDictKeys) -> str | None:
+        """Plays card from deck. Protected as should only be invoked by 'Player' object, not user."""
+        # Check game is in valid state.
+        valid_states: set[GameStates] = {
+            "running_work_player_1",
+            "running_work_player_2",
+            "running_work_player_3",
+            "running_work_player_4",
+            "current_player_decision"
+        }
+        self.__game.state._is_valid_state_for_func(self.__game.game_state, valid_states)
+        self.__cards[key]._set_played()
+        return self.__cards[key].func
+
+    def _pop(self, key: CardDictKeys) -> MajorImprovement|MinorImprovement|Occupation:
         """
         Pops card from deck.
 
         Pop is a well known func and is exposed here to simplify popping a Card and supports
-        syntax of my_deck.pop() vs my_deck.cards.pop() for intuitive UX.
+        syntax of my_deck._pop() vs my_deck.cards.pop() for intuitive UX.
         """
         # Check game is in valid state.
         valid_states: set[GameStates] = {
@@ -325,7 +353,7 @@ class Deck:
             "running_work_player_4",
             "current_player_decision"
         }
-        self.__game.state.is_valid_state_for_func(self.__game.game_state, valid_states)
+        self.__game.state._is_valid_state_for_func(self.__game.game_state, valid_states)
         card = self.__cards[key]
         del self.__cards[key]
         return card
