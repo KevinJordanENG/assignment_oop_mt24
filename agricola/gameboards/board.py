@@ -5,7 +5,6 @@ from __future__ import annotations
 from abc import ABCMeta, abstractmethod
 from types import MappingProxyType
 from typing import Mapping, TypedDict, TYPE_CHECKING
-
 from ..type_defs import Coordinate, Location, GoodsType, SpaceType, Action, GameStates
 if TYPE_CHECKING:
     from ..game import Game
@@ -79,6 +78,9 @@ class BaseBoard(metaclass=ABCMeta):
     def open_spaces(self) -> frozenset[Coordinate]:
         """Returns read only view of open spaces on current board, delegates to 'is_occupied()'."""
         return frozenset(coord for coord in self._valid_spaces if not self.is_occupied(coord))
+             # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+             # Advanced Language Feature: Comprehension - takes a loop collection builder, 
+             # smooshes it into an iterable collection, extra fast.
 
     def get_space_type(self, coord: Coordinate) -> SpaceType:
         """Returns type of space of supplied coordinates."""
@@ -322,7 +324,7 @@ class BaseBoard(metaclass=ABCMeta):
         ) -> None:
         """Moves 'person' according to game rules."""
         # Decide if move path is valid & perform source/dest. actions as needed.
-        # inv -> farm
+        # inv -> farm.
         if source_board == "inventory" and destination_board == "farmyard":
             # Can only be dest. board.
             if self.board_type == "farmyard":
@@ -333,7 +335,7 @@ class BaseBoard(metaclass=ABCMeta):
                 self._board[destination_coord]["occupied"] = True
             else:
                 pass # No effect if action space as not involved here.
-        # inv -> act
+        # inv -> act.
         elif source_board == "inventory" and destination_board == "action_space":
             # Means we're taking 'have_kids' action.
             if self.board_type == "action_space":
@@ -343,7 +345,7 @@ class BaseBoard(metaclass=ABCMeta):
                 self._board[destination_coord]["child"] = True
             else:
                 pass # No effect if farmyard as not involved here.
-        # farm -> act
+        # farm -> act.
         elif source_board == "farmyard" and destination_board == "action_space":
             # We're a source.
             if self.board_type == "farmyard":
@@ -351,7 +353,7 @@ class BaseBoard(metaclass=ABCMeta):
             # We're a dest.
             else:
                 self._board[destination_coord]["occupied"] = True
-        # act -> farm
+        # act -> farm.
         elif source_board == "action_space" and destination_board == "farmyard":
             # We're a source.
             if self.board_type == "action_space":
@@ -371,7 +373,7 @@ class BaseBoard(metaclass=ABCMeta):
         ) -> None:
         """Moves 'stable' according to game rules."""
         # Decide if move path is valid & perform source/dest. actions as needed.
-        # inv -> farm
+        # inv -> farm.
         if source_board == "inventory" and destination_board == "farmyard":
             if self.board_type == "farmyard":
                 # Can only be dest. board.
@@ -393,7 +395,7 @@ class BaseBoard(metaclass=ABCMeta):
         ) -> None:
         """Moves animals according to game rules."""
         # Decide if move path is valid & perform source/dest. actions as needed.
-        # act -> farm
+        # act -> farm.
         if source_board == "action_space" and destination_board == "farmyard":
             # We're dest.
             if self.board_type == "farmyard":
@@ -440,7 +442,7 @@ class BaseBoard(metaclass=ABCMeta):
                 if num_goods != self._board[source_coord]["num_present"]:
                     raise ValueError("Must take all goods on accumulate space.")
                 self._board[source_coord]["num_present"] -= num_goods
-        # farm -> farm
+        # farm -> farm.
         if source_board == "farmyard" and destination_board == "farmyard":
             if self.board_type == "farmyard":
                 # Check both valid space types.
@@ -450,7 +452,7 @@ class BaseBoard(metaclass=ABCMeta):
                 if (self._board[destination_coord]["space_type"]
                     not in {"wood_room", "clay_room", "stone_room", "pasture", "unused"}):
                     raise ValueError("Not valid destination space type.")
-                # room/unused -> pasture
+                # room/unused -> pasture.
                 if (self._board[source_coord]["space_type"] in
                     {"wood_room", "clay_room", "stone_room", "unused"}
                     and self._board[destination_coord]["space_type"] == "pasture"):
@@ -467,7 +469,7 @@ class BaseBoard(metaclass=ABCMeta):
                         raise ValueError("Move requested would break capacity of pasture.")
                     self._board[destination_coord]["goods_type"] = goods_type
                     self._board[destination_coord]["num_present"] += num_goods
-                # room/pasture -> unused
+                # room/pasture -> unused.
                 elif (self._board[source_coord]["space_type"] in
                     {"wood_room", "clay_room", "stone_room", "pasture"}
                     and self._board[destination_coord]["space_type"] == "unused"):
@@ -481,7 +483,7 @@ class BaseBoard(metaclass=ABCMeta):
                         )
                     self._board[destination_coord]["goods_type"] = goods_type
                     self._board[destination_coord]["num_present"] = num_goods
-                # unused/pasture -> room
+                # unused/pasture -> room.
                 elif (self._board[source_coord]["space_type"] in {"pasture", "unused"}
                     and self._board[destination_coord]["space_type"]
                     in {"wood_room", "clay_room", "stone_room"}):
@@ -490,7 +492,7 @@ class BaseBoard(metaclass=ABCMeta):
                     # Put pet in room.
                     self._board[destination_coord]["goods_type"] = goods_type
                     self._board[destination_coord]["num_present"] = num_goods
-# FIXME! decide if needed to have pasture -> pasture
+                # TODO: implement pasture -> pasture.
                 else:
                     raise ValueError("Incompatible source & destination space types.")
             else:
@@ -509,7 +511,7 @@ class BaseBoard(metaclass=ABCMeta):
         ) -> None:
         """Moves building materials according to game rules."""
         # Decide if move path is valid & perform source/dest. actions as needed.
-        # act -> inv
+        # act -> inv.
         if source_board == "action_space" and destination_board == "inventory":
             # We're source.
             if self.board_type == "action_space":
@@ -535,9 +537,9 @@ class BaseBoard(metaclass=ABCMeta):
         ) -> None:
         """Moves crops according to game rules."""
         # Decide if move path is valid & perform source/dest. actions as needed.
-        # inv -> farm
+        # inv -> farm.
         if source_board == "inventory" and destination_board == "farmyard":
-            # Must be dest. (and taking "sow" action.)
+            # Must be dest. (and taking "sow" action).
             if self.board_type == "farmyard":
                 # Check space type.
                 if self._board[destination_coord]["space_type"] != "field":
@@ -550,9 +552,9 @@ class BaseBoard(metaclass=ABCMeta):
                 self._board[destination_coord]["num_present"] += num_goods + 2
             else:
                 pass # No other actions possible.
-        # farm -> inv
+        # farm -> inv.
         if source_board == "farmyard" and destination_board == "inventory":
-            # Must be source. (and taking "harvest_crops" action.)
+            # Must be source. (and taking "harvest_crops" action).
             if self.board_type == "farmyard":
                 if self._board[source_coord]["space_type"] != "field":
                     raise ValueError("Can only get crops from 'field' farmyard spaces.")
@@ -565,7 +567,7 @@ class BaseBoard(metaclass=ABCMeta):
                 self._board[source_coord]["num_present"] -= num_goods
             else:
                 pass # No other actions possible.
-# FIXME! Make farm -> farm case if time for all minor imp cards.
+        # TODO: Make farm -> farm case if time for all minor imp cards.
         else:
             # All other move paths invalid.
             raise ValueError(f"Illegal move of {goods_type!r} requested.")
@@ -579,7 +581,7 @@ class BaseBoard(metaclass=ABCMeta):
         ) -> None:
         """Moves food according to game rules."""
         # Decide if move path is valid & perform source/dest. actions as needed.
-        # act -> inv
+        # act -> inv.
         if source_board == "action_space" and destination_board == "inventory":
             # We're source.
             if self.board_type == "action_space":

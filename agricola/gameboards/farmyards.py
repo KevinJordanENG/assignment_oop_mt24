@@ -5,7 +5,6 @@ Uses BaseBoard ABC to handle unified board logic.
 from __future__ import annotations
 from types import MappingProxyType
 from typing import Mapping, TypedDict, cast, TYPE_CHECKING
-
 from .board import BaseBoard, SpaceData
 from ..type_defs import Coordinate, SpaceType, Axis, GameStates
 if TYPE_CHECKING:
@@ -100,7 +99,7 @@ class Farmyard(BaseBoard):
             return valid_adj and valid_current
         if space_type == "field":
             return self._board[coord]["space_type"] == "unused"
-# FIXME! add logic for other change requests
+        # TODO: add logic for other change requests.
         return False
 
     def get_house_type(self) -> SpaceType:
@@ -152,6 +151,7 @@ class Farmyard(BaseBoard):
         down = False if row+1 > 2 else (self._board[(row+1,col)]["space_type"] == space_type)
         left = False if col-1 < 0 else (self._board[(row,col-1)]["space_type"] == space_type)
         right = False if col+1 > 4 else (self._board[(row,col+1)]["space_type"] == space_type)
+            # Advanced Language Feature: Ternary Analogous Dynamic Eval & Assignment.
         return up or down or left or right
 
     def __init_board_spaces(self) -> None:

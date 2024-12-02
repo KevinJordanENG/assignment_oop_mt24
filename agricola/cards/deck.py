@@ -3,7 +3,6 @@ Deck module is a composition of major & minor improvements plus occupations.
 
 Allows for bulk operations on cards such as init.
 """
-
 from __future__ import annotations
 from contextlib import contextmanager
 import os
@@ -12,7 +11,6 @@ import ast
 import random
 from types import MappingProxyType
 from typing import Any, ClassVar, Iterator, Mapping, Self, cast, get_args, TYPE_CHECKING
-
 from .major_improvements import MajorImprovement
 from .minor_improvements import MinorImprovement
 from .occupations import Occupation
@@ -27,7 +25,6 @@ FuncNoEval = set([
     "GET_1_FOOD_NXT_X_RNDS",
     "BAKE_BREAD",
     "JOIN_POT_BASKET",
-    "PLOW",
     "GET_GOODS",
     "INCREASE_PASTURE_CAPACITY",
     "ADD_CLAY_TO_FENCE_BUILD_MAT",
@@ -117,14 +114,18 @@ FuncNoEval = set([
     "GET_ANIMAL",
     "MEAT_MRKT_USE+GET_ANIMAL",
     "GET_ANIMAL+BOAR_BREED_FUTURE_12",
-    "GET_GOODS||GET_ANIMAL"
+    "GET_GOODS||GET_ANIMAL",
+    "plow()"
 ])
+# TODO: replace with real funcs as ready.
+
 
 NoEvalTokens: set[str] = set(get_args(SpaceType)) | FuncNoEval
 """
 Special set of tokens to NOT eval when loading CSV.
 This is used to preserve str names and str representation of function calls to execute actions.
 """
+
 
 class Deck:
     """
@@ -171,6 +172,7 @@ class Deck:
             with Deck.__constructing_cards():
                 self.__load_csv(path, num_players)
         # Otherwise we're dynamically creating new empty Deck somewhere within the game.
+        # TODO: Add player context manager checks for Major Imps.
         else:
             self.__cards = {}
         return self
@@ -210,7 +212,7 @@ class Deck:
     def get_prereqs_minor_imp(
             self,
             key: MinorImproveNames
-        ) -> Any: # Any used as various types/structures of prereqs
+        ) -> Any: # Any used as various types/structures of prereqs.
         """Gets prerequisites for playing minor improvement."""
         # Check game is in valid state.
         valid_states: set[GameStates] = {"current_player_decision"}
@@ -321,7 +323,16 @@ class Deck:
             "running_round_harvest"
         }
         self.__game.state._is_valid_state_for_func(self.__game.game_state, valid_states)
-# FIXME: add error checking that right card type for deck.
+        # Error check request card & deck type match.
+        if self.__deck_type == "major":
+            if key not in get_args(MajorImproveNames):
+                raise ValueError("Invalid card/key for deck type.")
+        elif self.__deck_type == "minor":
+            if key not in get_args(MinorImproveNames):
+                raise ValueError("Invalid card/key for deck type.")
+        elif self.__deck_type == "occupation":
+            if key not in get_args(OccupationNames):
+                raise ValueError("Invalid card/key for deck type.")
         self.__cards[key] = card
 
     def _play_card(self, key: CardDictKeys) -> str | None:
@@ -363,13 +374,16 @@ class Deck:
         with open(path, 'r', encoding="utf-8") as data:
             dict_reader = csv.DictReader(data)
             for row in dict_reader:
+                # Get name of card.
                 name = cast(MajorImproveNames, row.pop("key"))
+                # Get all its various attributes.
                 attributes: dict[str, Any] = {}
                 for k, v in row.items():
                     if v in NoEvalTokens:
                         attributes[k] = v
                     else:
                         attributes[k] = ast.literal_eval(v)
+                # Build card.
                 card = MajorImprovement(self.__game, name, attributes)
                 self.__cards[name] = card
 
@@ -379,13 +393,16 @@ class Deck:
         with open(path, 'r', encoding="utf-8") as data:
             dict_reader = csv.DictReader(data)
             for row in dict_reader:
+                # Get name of card.
                 name = cast(MinorImproveNames, row.pop("key"))
+                # Get all its various attributes.
                 attributes: dict[str, Any] = {}
                 for k, v in row.items():
                     if v in NoEvalTokens:
                         attributes[k] = v
                     else:
                         attributes[k] = ast.literal_eval(v)
+                # Build card.
                 card = MinorImprovement(self.__game, name, attributes)
                 self.__cards[name] = card
 
@@ -397,13 +414,16 @@ class Deck:
                 # Check here if it belongs in this num_player version of deck.
                 if int(row["num_players"]) > num_players:
                     continue
+                # Get name of card.
                 name = cast(OccupationNames, row.pop("key"))
+                # Get all its various attributes.
                 attributes: dict[str, Any] = {}
                 for k, v in row.items():
                     if v in NoEvalTokens:
                         attributes[k] = v
                     else:
                         attributes[k] = ast.literal_eval(v)
+                # Build card.
                 card = Occupation(self.__game, name, attributes)
                 self.__cards[name] = card
 

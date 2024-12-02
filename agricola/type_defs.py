@@ -202,16 +202,16 @@ OccupationNames = Literal[
 
 GameStates = Literal[
     "not_started", # Access to inspection ops or 'start' ops no mods or init.
-    "stopped_early", # Error on all, raise error to try again.
+    "stopped_early", # Error on all.
     "finished", # Access to scoring, inspection, not mods.
     "running_game", # No access to init or start.
     "running_round_prep", # Only access to prep func & inspection.
     "running_round_return_home", # Only access to return home func & inspection.
     "running_round_harvest", # Only access to harvest func & inspection.
-    "running_work_player_1", # Player turn logic.
+    "running_work_player_1", # Player turn logic, inspection, player mods.
     "running_work_player_2",
     "running_work_player_3",
     "running_work_player_4",
-    "current_player_decision" # if action space/occup/improvement requires a decision from player.
+    "current_player_decision" # If action space/occup/improvement requires a decision from player.
 ]
 """Type alias for all various game states."""

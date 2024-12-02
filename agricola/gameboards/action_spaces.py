@@ -12,6 +12,7 @@ from ..type_defs import Coordinate, Action, GoodsType, SpaceType, GameStates
 if TYPE_CHECKING:
     from ..game import Game
 
+
 ActionCSVLine = tuple[Action, dict[str, Any]]
 """
 Type Alias used locally in action spaces frequently representing one line of loaded CSV.
@@ -35,17 +36,17 @@ Marked as Final as these sets are predefined and illegal to modify.
 
 
 ROUND_COORDS: Final[list[Coordinate]] = [
-    (0,2), (0,3), (1,3), (2,3), # Phase 1
-    (0,4), (1,4), (2,4), # Phase 2
-    (0,5), (1,5), # Phase 3
-    (0,6), (1,6), # Phase 4
-    (0,7), (1,7), # Phase 5
-    (0,8) # Phase 6
+    (0,2), (0,3), (1,3), (2,3), # Phase 1.
+    (0,4), (1,4), (2,4), # Phase 2.
+    (0,5), (1,5), # Phase 3.
+    (0,6), (1,6), # Phase 4.
+    (0,7), (1,7), # Phase 5.
+    (0,8) # Phase 6.
 ]
 """List containing ordered coordinates available per stage as defined in rulebook."""
 
 
-# TODO: change these to real functions once they exist
+# TODO: change these to real functions once they exist.
 FuncNoEval = set([
     "PLAY_MINOR_IMPR||PLAY_MAJOR_IMPR",
     "BUILD_FENCES",
@@ -91,7 +92,9 @@ This is used to preserve str names and str representation of function calls to e
 class ActionSpaces(BaseBoard):
     """Action spaces is the class for the main shared gameboard."""
 
-    # Any is used here as values in dict are intentionally varied for functionality.
+    # 'Any' is used here as values in dict are intentionally varied for functionality.
+    # 'Any' also seemed cleaner than a mega-union type 
+    # such as 'int | tuple[int,int] | bool | None | str | tuple[tuple[int,str], ...] | 'etc...
     __csv_data: dict[Action, dict[str, Any]]
 
     def __init__(self, game: Game, num_players: int, path: str) -> None:
@@ -168,7 +171,7 @@ class ActionSpaces(BaseBoard):
         return self.__csv_data[action]["costs"]
 
     def get_space_data_from_action(self, action: Action) -> tuple[Coordinate, SpaceData] | None:
-        """Returns space data for requested action key."""
+        """Returns space data for requested action key if it exists, else None."""
         # Check game is in valid state.
         valid_states: set[GameStates] = {
             "not_started",
@@ -194,7 +197,9 @@ class ActionSpaces(BaseBoard):
         # Check game is in valid state.
         valid_states: set[GameStates] = {"running_round_prep"}
         self._game.state._is_valid_state_for_func(self._game.game_state, valid_states)
+        # Get respective CSV data.
         line: ActionCSVLine = self.__fetch_csv_line(round_num=round_num, stage=stage)
+        # Add space to game board with bundled data.
         self._board[ROUND_COORDS[round_num-1]] = self.__bundle_space_data(line)
         self._valid_spaces.add(ROUND_COORDS[round_num-1])
 
@@ -226,6 +231,7 @@ class ActionSpaces(BaseBoard):
 
     def __find_in_csv_data(self, key: str, value: Any) -> ActionCSVLine:
         """Iterates over all action items looking in their dicts for specified k/v pair."""
+        # 'Any' used purposeful as CSV data value dict has all forms of data.
         ans = None
         for line in self.__csv_data.items():
             if line[1][key] == value:
@@ -237,10 +243,12 @@ class ActionSpaces(BaseBoard):
 
     def __select_rand_round_action(self, round_num: int, stage: int) -> ActionCSVLine:
         """Randomly selects from remaining stage action spaces for the stage."""
+        # Get remaining valid subset.
         sub_set = []
         for item in self.__csv_data.items():
             if (item[1]["stage"] == stage) and (item[1]["coord"] == (-1,-1)):
                 sub_set.append(item)
+        # Get random item from subset.
         rnd = random.randint(0, len(sub_set)-1)
         sub_set[rnd][1]["coord"] = ROUND_COORDS[round_num-1]
         return sub_set[rnd]
@@ -290,8 +298,9 @@ class ActionSpaces(BaseBoard):
             dict_reader = csv.DictReader(data)
             for row in dict_reader:
                 self.__csv_data[action := cast(Action, row.pop("key"))] = {}
+                                     # ^^ ------> Advanced Language Feature: Walrus Operator.
                 for k, v in row.items(): #^^^^ All keys will be part of this type alias, so cast.
-                    # Uses NoEvalTokens to keep select values as str for names or later execution.
+                    # Uses NoEvalTokens to keep select values as str for names for later execution.
                     if v in NoEvalTokens:
                         self.__csv_data[action][k] = v
                     else:

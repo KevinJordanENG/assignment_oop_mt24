@@ -1,11 +1,10 @@
 """
-Module providing the state machine(s) for game turn based logic.
+Module providing the state machine/management for game turn based logic.
 """
 from __future__ import annotations
 from contextvars import ContextVar
 from typing import ClassVar, Self, TYPE_CHECKING, final
 from weakref import WeakValueDictionary
-
 from .type_defs import GameStates
 from .gameboards import ActionSpaces
 if TYPE_CHECKING:
@@ -20,7 +19,8 @@ PhaseChangeRounds: set[int] = set([4, 7, 9, 11, 13, 14])
 """Set of predefined rounds where game 'phase' changes. Also when harvest happens."""
 
 
-@final
+       # Advanced Language Feature: Decorators (Final) - Modifies without need of code change.
+@final # Final blocks subclassing / inheritance supporting flyweight pattern.
 class GameState:
     """
     Main state class that controls all sub-state components.
@@ -34,6 +34,8 @@ class GameState:
     """
 
     __state_servers: ClassVar[WeakValueDictionary[str, GameState]] = WeakValueDictionary()
+           # Advanced Language Feature: WeakRef & Garbage Collection ^^^^^^^^^^^^^^^^^^^
+           # Allows management of how garbage collection clears unused data.
     __round_number: int
     __phase_number: int
     __num_players: int
@@ -124,21 +126,21 @@ class GameState:
         for player in players.players_tup:
             player._get_goods_from_future_action_spaces(self.round_number)
 
-# TODO: below relate to RETURNING HOME ________________________
+    # TODO: below relate to RETURNING HOME ________________________
     def _return_people_home(self) -> None:
         """"""
 
-# TODO: below relate to HARVEST _______________________________
+    # TODO: below relate to HARVEST _______________________________
     def _check_if_harvest_round(self) -> None:
         """"""
-        # Use PhaseChangeRounds to check if harvest round
+        # Use PhaseChangeRounds to check if harvest round.
 
     def _harvest_crops(self) -> None:
         """"""
 
     def _feed_your_people(self) -> None:
         """"""
-# TODO: 2 food per person 2-4 players but 3 food per person 1 player
+        # TODO: 2 food per person 2-4 players but 3 food per person 1 player.
 
     def _set_begging_marker(self) -> None:
         """"""
@@ -189,7 +191,7 @@ class GameState:
 
     def __filter_valid_states_by_num_players(self, valid_states: set[GameStates]) -> set[GameStates]:
         """Takes in set of normally valid states and returns subset based on num_players."""
-# TODO: Maybe check this logic as more funcs added.
+        # TODO: Maybe check this logic as more funcs added.
         if self.__num_players == 1:
             if "running_work_player_1" in valid_states:
                 valid_states.remove("running_work_player_1")

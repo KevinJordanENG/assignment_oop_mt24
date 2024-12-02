@@ -5,9 +5,7 @@ Tiles are special as when you use one side you also remove the other side
 from the global inventory. Example: you Plow and place 1 field tile,
 but when you do this the number of possible wood rooms left to build also decrements.
 """
-
 from typing import Self
-
 from ..type_defs import SpaceType
 
 

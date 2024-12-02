@@ -8,7 +8,6 @@ from __future__ import annotations
 from copy import deepcopy
 from types import MappingProxyType
 from typing import NotRequired, Self, TypedDict, cast, TYPE_CHECKING
-
 from ..type_defs import Location, Coordinate, GoodsType, Axis, GameStates
 if TYPE_CHECKING:
     from ..game import Game
@@ -51,10 +50,11 @@ class Supply:
 
     @property
     def limited_goods(self) -> tuple[MappingProxyType[str, object], ...]:
-                                                         # ^^^^^^ object use suggested by MyPy as better than 'Any' and allows
+                                                         # ^^^^^^ 'object' use suggested by MyPy as better than 'Any' and allows
                                                          #        varied value types to be returned for each key in TypedDict.
         """Property to show read only info of limited goods."""
-        temp: list[MappingProxyType[str, object]] = [] # Temp list copy but used to store the MappingProxyType version of our Good TypedDict.
+        # Temp list copy but used to store the MappingProxyType version of our Good TypedDict.
+        temp: list[MappingProxyType[str, object]] = []
         for good in self.__limited_goods:
             temp.append(MappingProxyType(good))
         return tuple(temp)
@@ -93,6 +93,9 @@ class Supply:
         count = 0
         for _, good in enumerate(stock_type):
             count += 1 if good["goods_type"] == goods_type else 0
+                   # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Advanced Language Feature:
+                   # Dynamic Eval & Assignment - the 'val_a if condition else val_b' syntax is similar
+                   # to the C ternary operator (?), so not unique but still nice language feature.
         return count
 
     def _add(self, item: Good) -> None:
@@ -234,7 +237,7 @@ class Supply:
             raise ValueError("Illegal move requested.")
         # Move for num_goods.
         for _ in range(num_goods):
-            # farm/act -> inv
+            # farm/act -> inv.
             if source_board in {"farmyard", "action_space"} and destination_board == "inventory":
                 if goods_type in {"wood", "clay", "stone", "reed", "grain", "vegetable", "food"}:
                     # Instantiate good.
@@ -247,7 +250,7 @@ class Supply:
                     self._add(good)
                 else:
                     raise ValueError("Illegal move requested.")
-            # inv -> farm
+            # inv -> farm.
             elif source_board == "inventory" and destination_board == "farmyard":
                 fetch = self.__get_general_good(goods_type, source_board, source_coord)
                 if fetch is None:
@@ -260,17 +263,17 @@ class Supply:
                     raise ValueError("Illegal move requested.")
             # Some redundant error checking of board to board data transfer,
             # even tho handled by SpaceData.
-            # act -> farm
+            # act -> farm.
             elif source_board == "action_space" and destination_board == "farmyard":
                 # Check if appropriate goods type.
                 if goods_type in {"sheep", "boar", "cattle"}:
-                    pass # Goods info handled via SpaceData
+                    pass # Goods info handled via SpaceData.
                 else:
                     raise ValueError("Illegal move requested.")
-            # farm -> farm
+            # farm -> farm.
             elif source_board == "farmyard" and destination_board == "farmyard":
                 if goods_type in {"sheep", "boar", "cattle", "grain", "vegetable"}:
-                    pass # Goods info handled via SpaceData
+                    pass # Goods info handled via SpaceData.
                 else:
                     raise ValueError("Illegal move requested.")
 
@@ -309,14 +312,17 @@ class Supply:
         }
         stable: Good = {"goods_type": "stable", "location": "inventory", "coordinate": (-1, -1)}
         person: Good = {"goods_type": "person", "location": "inventory", "coordinate": (-1, -1)}
-        # Use of deepcopy to assure each Good is its own unique object.
+        # Use of deepcopy to assure each Good is its own unique object, uses Prototype Pattern.
         fences = [deepcopy(fence) for _ in range(15)]
         stables = [deepcopy(stable) for _ in range(4)]
         persons = [deepcopy(person) for _ in range(5)]
+                # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Advanced Language Feature: Comprehension -
+                # takes a loop collection builder, smooshes it into an iterable collection, extra fast.
         return fences + stables + persons
 
     def __init_general_goods(self, num_food: int) -> list[Good]:
         """Initializes inventory of general goods, only food included at first."""
         food: Good = {"goods_type": "food", "location": "inventory", "coordinate": (-1, -1)}
-        # Use of deepcopy to assure each Good is its own unique object.
+        # Use of deepcopy to assure each Good is its own unique object, uses Prototype Pattern.
         return [deepcopy(food) for _ in range(num_food)]
+             # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Advanced Language Feature: Comprehension

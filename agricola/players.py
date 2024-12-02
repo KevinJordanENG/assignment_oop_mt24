@@ -4,7 +4,6 @@ Module containing Player class for controlling agricola game players.
 from __future__ import annotations
 from contextlib import contextmanager
 from typing import ClassVar, Iterator, Self, TYPE_CHECKING, cast
-
 from .goods import Supply
 from .gameboards import Farmyard, MoveRequest
 from .cards import Deck
@@ -25,6 +24,8 @@ if TYPE_CHECKING:
 class Player:
     """
     Player class.
+
+    Maintains control for "player" scope actions such as developing farmyard, deciding on actions, etc.
     """
 
     __is_constructing_supply: ClassVar[bool] = False   # ⌉  Cool pattern of context managers for instantiation
@@ -94,7 +95,7 @@ class Player:
             starting: bool = False
         ) -> Self:
         """
-        Constructor for Player object, a main UI for the agricola API.
+        Constructor for Player object, an important sub-object for the agricola API.
         Uses context manager checks from Game to ensure not constructed directly.
         """
         # Dynamic to avoid circular imports, and error if not being built in proper context.
@@ -160,7 +161,7 @@ class Player:
 
     @property
     def required_decision_args_types(self) -> tuple[str, ...]:
-        """Returns tuple of required arg types to be passed to decision() func."""
+        """Returns tuple of required arg types to be passed to 'decision()' func."""
         return tuple(self.__decision_args_cache)
 
     @property
@@ -223,6 +224,7 @@ class Player:
         # Early reject if space occupied.
         if destination_coord not in self.__game.action_spaces.open_spaces:
             raise ValueError("Coordinate is already occupied.")
+        # Move as needed.
         self.__farmyard._move(
             "person", 1, "action_space", destination_coord, "farmyard", source_coord
         )
@@ -230,16 +232,19 @@ class Player:
             "person", 1, "action_space", destination_coord, "farmyard", source_coord
         )
         self.__supply._move("person", 1, "action_space", destination_coord, "farmyard", source_coord)
+        # Get action & function associated.
         action_key = self.__game.action_spaces.get_action(destination_coord)
         if action_key is None:
             raise ValueError("Missing action at requested space.")
         str_func = self.__game.action_spaces.get_action_function(action_key)
-        # All funcs from action_spaces are protected by default.
+        # All funcs from action_spaces are protected by default so append 'self._'.
         str_func = "self._" + str_func
         # WARNING! Known to be extremely brittle & dangerous in normal setting.
         # Used here as caching functions & args in the CSV containing space data makes maintaining
         # the large number of unique actions tractable for this game in shorter development time.
+        # Evaluate action space function.
         decision = eval(str_func)
+        # Set state depending if player decision required.
         if decision:
             self.__game.state._set_current_player_decision()
         else:
@@ -255,7 +260,7 @@ class Player:
             raise ValueError("Invalid choice, must be either 'room' or 'stable'.")
         if room_or_stable == "room":
             room_or_stable = self.__farmyard.get_house_type()
-        # We're for sure using 'farm_expansion' right?
+        # We're for sure using 'farm_expansion'.
         costs = self.__game.action_spaces.get_action_func_cost('farm_expansion')
         cost_of_interest = costs[room_or_stable]
         if room_or_stable == "stable":
@@ -344,7 +349,7 @@ class Player:
         # Check game is in valid state.
         valid_states: set[GameStates] = {"current_player_decision"}
         self.__game.state._is_valid_state_for_func(self.__game.game_state, valid_states)
-        # FIXME! plz build: currently just pass-through of True assumes prereqs are met.
+        # TODO: plz build! currently just pass-through of True assumes prereqs are met.
         return True
 
     def play_occupation(self, occup: OccupationNames) -> bool:
@@ -399,10 +404,9 @@ class Player:
                 raise ValueError("Not enough resources to pay card build cost.")
             # Pay build cost.
             self.__supply._pay(build_cost)
-
-# FIXME! left off here
-
-        return True
+        # FIXME! left off here.
+        #return True
+        raise NotImplementedError()
 
     def return_fireplace_or_buy_hearth(self, buy_or_return: str) -> bool:
         """
@@ -427,10 +431,9 @@ class Player:
             # Pay build cost.
             self.__supply._pay(self.__pending_payment)
             self.__pending_payment = ()
-        
-# FIXME! left off here
-
-        return False
+        # FIXME! left off here.
+        #return False
+        raise NotImplementedError()
 
     def choose_action_function(self, chosen_func: str) -> bool:
         """Takes the function chosen and loads it in cache."""
@@ -438,7 +441,7 @@ class Player:
         valid_states: set[GameStates] = {"current_player_decision"}
         self.__game.state._is_valid_state_for_func(self.__game.game_state, valid_states)
         self.__decision_func_cache = chosen_func
-        # Need a large if else tree to match chosen func to args.
+        # Need a medium if else tree to match chosen func to args.
         # Limited number of times functions are chosen between, so ugly/unscalable but works.
         # Minor imp.
         if "play_minor_improvement" in chosen_func:
@@ -446,13 +449,14 @@ class Player:
         # Major imp.
         elif "play_major_improvement" in chosen_func:
             self.__decision_args_cache = ["arg0: MajorImproveNames"]
-# TODO: finish list
+        # TODO: finish list.
         # Sow.
         # Bake bread.
         # Get goods.
         # Get animal.
         # Cook.
-        return True
+        #return True
+        raise NotImplementedError()
 
     def decision_cleanup(self, end_turn: bool) -> None:
         """
@@ -484,12 +488,14 @@ class Player:
         # Check game is in valid state.
         valid_states: set[GameStates] = {"current_player_decision"}
         self.__game.state._is_valid_state_for_func(self.__game.game_state, valid_states)
-        # Check if pub vs protected method and add '_' as needed.
+        # Check if public vs protected method and add '_' as needed.
         self.__public_vs_protected_func_decision_prep()
         # Smoosh self. onto str so it properly executes.
         self.__decision_func_cache = "self." + self.__decision_func_cache
         # Take args cache & input into func cache str.
         filled_str = self.__decision_func_cache.format(*decision_args)
+        # Advanced Language Feature:                   ^
+        # Unpack Positional Args - takes decision_args and puts them positionally into format().
         # Eval func.
         decision = eval(filled_str)
         # If no more decisions.
@@ -502,7 +508,7 @@ class Player:
         # If more decisions, the functions will have set the func & args caches,
         # so no further action.
 
-    def move_items(self, move_request: MoveRequest) -> None:
+    def _move_items(self, move_request: MoveRequest) -> None:
         """Player call to move selected item(s) around player controlled spaces."""
         # Check game is in valid state.
         valid_states: set[GameStates] = {
@@ -521,6 +527,8 @@ class Player:
         self.__farmyard._move(**move_request)
         self.__game.action_spaces._move(**move_request)
         self.__supply._move(**move_request)
+                          # ^^ Advanced Language Feature: Dict Unpacking - Blasts various num args of move_request
+                          #    to _move() function without need to explicitly name them.
 
     def _get_goods_from_future_action_spaces(self, round_num: int) -> None:
         """If player has items on future action spaces, this add them to player's inventory."""
@@ -580,7 +588,7 @@ class Player:
                 return False # No further decision needed.
         # Getting from general inventory.
         elif action is None:
-# TODO: Build this logic for minor imp. & occup calls to get_goods().
+        # TODO: Build this logic for minor imp. & occup calls to get_goods().
             pass
         return False
 

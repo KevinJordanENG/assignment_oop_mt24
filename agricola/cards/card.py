@@ -6,7 +6,6 @@ from __future__ import annotations
 from abc import ABCMeta
 from types import MappingProxyType
 from typing import Any, TYPE_CHECKING, Mapping, Self
-
 from ..type_defs import MajorImproveNames, MinorImproveNames, OccupationNames, GameStates
 if TYPE_CHECKING:
     from ..game import Game
@@ -15,6 +14,7 @@ if TYPE_CHECKING:
 CardDictKeys = MajorImproveNames | MinorImproveNames | OccupationNames
 """ReAlias of all possible card keys/names to allow ABC and type checking for dict."""
 
+
 class Card(metaclass=ABCMeta):
     """
     ABC Card defining base card functions.
@@ -22,7 +22,7 @@ class Card(metaclass=ABCMeta):
 
     _game: Game
     _name: CardDictKeys
-    # Any is used here as values in dict are intentionally varied for functionality.
+    # Any is used purposefully here as values in attribute dict are intentionally varied for functionality.
     _attributes: dict[str, Any]
     _played: bool
 
@@ -48,6 +48,7 @@ class Card(metaclass=ABCMeta):
 
     @property
     def attributes(self) -> Mapping[str, Any]:
+        # Any is used purposefully here as values in dict are intentionally varied for functionality.
         """Property returning read only view of this card's various data."""
         return MappingProxyType(self._attributes)
 

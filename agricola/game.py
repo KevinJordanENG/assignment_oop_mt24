@@ -15,7 +15,7 @@ from weakref import WeakValueDictionary
 # Relative imports from `agricola` package.
 from .players import Player, Players
 from .gameboards import ActionSpaces, Tiles, MoveRequest
-from .rounds_server import GameState
+from .state_server import GameState
 from .cards import Deck
 from .type_defs import SpaceType, Coordinate, GameStates, GoodsType, Location
 
@@ -27,14 +27,15 @@ It is not meant to be set by the `user`, rather, set once by the `operator`
 when installing the game on target machine the 1st time.
 """
 
-@final # No subclasses allowed (Optional Agricola expansion packs would just add to Decks' CSVs.)
+
+@final # No subclasses allowed (Optional Agricola expansion packs would just add to Decks' CSVs).
 class Game:
     """
     Agricola Game API instance class.
     """
 
     __game_instances: ClassVar[WeakValueDictionary[str, Game]] = WeakValueDictionary()
-    # ^^^^^^^^^^^^^^ --> Flyweight pattern!
+    # ^^^^^^^^^^^^^^ --> Flyweight pattern.
     __is_constructing_state_server: ClassVar[bool] = False  # ⌉
     __is_constructing_action_spaces: ClassVar[bool] = False # |  Cool pattern of context managers for instantiation
     __is_constructing_tiles: ClassVar[bool] = False         # |- control borrowed from Dr. Stefano Gogioso's
@@ -79,11 +80,13 @@ class Game:
         # Set context ClassVar to 'is constructing'.
         Game.__is_constructing_state_server = True
         try:
-            # Pass control back to caller.
+            # Pass control back TO caller.
             yield None
         finally:
-            # Cleanup and set 'is constructing' back to False.
+            # Cleanup and set 'is constructing' back to False once control passed back FROM caller.
             Game.__is_constructing_state_server = False
+        # Advanced Language Feature: Generator / Context Manager - When this structure of try -> yield -> finally
+        # is found, Python interpreter generates a context manager invoked using `with` syntax.
 
     @staticmethod
     @contextmanager
@@ -157,7 +160,7 @@ class Game:
         Uses flyweight pattern to enforce that each Game object is fully unique,
         but equally allowing multiple different instances.
         """
-        # Early reject if invalid num_players
+        # Early reject if invalid num_players.
         if (num_players < 1) or (num_players > 4):
             raise ValueError("Number of players must be between 1 and 4.")
         # Check if game instance (with same uuid) already exists.
@@ -168,6 +171,8 @@ class Game:
             self.__instance_uuid = instance_uuid
             # Init game state (also flyweight) within proper managed context.
             with Game.__constructing_state_server():
+          # ^^^^ Advanced Language Feature: Context Manager - special way of handling setup/teardown
+            # of contextual / situational control / logic.
                 self.__state = GameState(num_players, instance_uuid)
             # Init game controlled objects within proper managed context(s).
             with Game.__constructing_action_spaces():
@@ -286,24 +291,6 @@ class Game:
             destination_coord, source_coord
         )
 
-    # TODO: Decide if public or not
-    def move_item(self, move_request: MoveRequest, *, player_id: int) -> None:
-        """Unified move routine from 'game' directly that changes all necessary data."""
-        # Check game is in valid state.
-        valid_states: set[GameStates] = {
-            "running_game",
-            "running_round_prep",
-            "running_work_player_1",
-            "running_work_player_2",
-            "running_work_player_3",
-            "running_work_player_4",
-            "current_player_decision",
-            "running_round_return_home",
-            "running_round_harvest"
-        }
-        self.__state._is_valid_state_for_func(self.game_state, valid_states)
-        self.__player.players_tup[player_id-1].move_items(move_request)
-
     def quit_game_early(self) -> None:
         """
         Public method allowing early stopping of game.
@@ -351,13 +338,30 @@ class Game:
             "source_coord": cast(Coordinate, source_coord)
         }
         return move_request
+    
+    def _move_item(self, move_request: MoveRequest, *, player_id: int) -> None:
+        """Unified move routine from 'game' directly that changes all necessary data."""
+        # Check game is in valid state.
+        valid_states: set[GameStates] = {
+            "running_game",
+            "running_round_prep",
+            "running_work_player_1",
+            "running_work_player_2",
+            "running_work_player_3",
+            "running_work_player_4",
+            "current_player_decision",
+            "running_round_return_home",
+            "running_round_harvest"
+        }
+        self.__state._is_valid_state_for_func(self.game_state, valid_states)
+        self.__player.players_tup[player_id-1]._move_items(move_request)
 
     def __init_action_spaces(self, num_players: int, *, path: str) -> None:
         """Sets up the action spaces board depending on number of players."""
         # Check game is in valid state.
         valid_states: set[GameStates] = {"not_started"}
         self.__state._is_valid_state_for_func(self.game_state, valid_states)
-        # Init.
+        # Call instantiation.
         self.__action_spaces = ActionSpaces(self, num_players, path)
 
     def __init_tiles(self) -> None:
@@ -383,7 +387,7 @@ class Game:
         # Check game is in valid state.
         valid_states: set[GameStates] = {"not_started"}
         self.__state._is_valid_state_for_func(self.game_state, valid_states)
-        # Init.
+        # Build & return.
         self.__major_imp_cards = Deck(self, "major", path=path)
 
     def __init_minor_imp_cards(self, *, path: str) -> Deck:
@@ -391,7 +395,7 @@ class Game:
         # Check game is in valid state.
         valid_states: set[GameStates] = {"not_started"}
         self.__state._is_valid_state_for_func(self.game_state, valid_states)
-        # Init.
+        # Build & return.
         return Deck(self, "minor", path=path)
 
     def __init_occup_cards(self, *, path: str, num_players: int) -> Deck:
@@ -399,7 +403,7 @@ class Game:
         # Check game is in valid state.
         valid_states: set[GameStates] = {"not_started"}
         self.__state._is_valid_state_for_func(self.game_state, valid_states)
-        # Init.
+        # Build & return.
         return Deck(self, "occupation", path=path, num_players=num_players)
 
     def __init_players(self, num_players: int, minor: Deck, occup: Deck) -> Players:
@@ -407,7 +411,7 @@ class Game:
         # Check game is in valid state.
         valid_states: set[GameStates] = {"not_started"}
         self.__state._is_valid_state_for_func(self.game_state, valid_states)
-        # Initially list so append works / iterative init for num_players.
+        # Initially list so append works / iterative init for varied num_players.
         players_list: list[Player] = []
         # Generate random int to assign initial 'starting player' token based on num_players.
         rnd = random.randint(1, num_players)

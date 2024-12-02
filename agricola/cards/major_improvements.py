@@ -3,7 +3,6 @@ Module defining MajorImprovement cards.
 """
 from __future__ import annotations
 from typing import Any, Self, TYPE_CHECKING
-
 from .card import Card
 from ..type_defs import MajorImproveNames
 if TYPE_CHECKING:
@@ -18,6 +17,7 @@ class MajorImprovement(Card):
     _func: str
 
     def __new__(cls, game: Game, name: MajorImproveNames, attributes: dict[str, Any]) -> Self:
+        # Any is used purposefully here as values in attributes dict are intentionally varied for functionality.
         """Constructor for new major improvement cards."""
         self = super().__new__(cls, game)
         self._name = name
@@ -31,4 +31,4 @@ class MajorImprovement(Card):
         """Returns str version of function call associated with card."""
         return self._func
 
-# TODO: joinery, pottery, basket only can action on harvest rounds
+    # TODO: joinery, pottery, basket only can action on harvest rounds.
