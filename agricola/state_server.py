@@ -3,7 +3,7 @@ Module providing the state machine/management for game turn based logic.
 """
 from __future__ import annotations
 from contextvars import ContextVar
-from typing import ClassVar, Self, TYPE_CHECKING, final
+from typing import ClassVar, Self, TYPE_CHECKING, cast, final
 from weakref import WeakValueDictionary
 from .type_defs import GameStates
 from .gameboards import ActionSpaces
@@ -79,18 +79,35 @@ class GameState:
 
     def _play_next_player_actions(self) -> None:
         """Sets state to next player for them to take actions."""
-        # Set state as appropriate.
-        if (self.STATE.get() == "running_round_prep"
-            or self.STATE.get() == "running_work_player_4"):
+        # Check valid state.
+        valid_states: set[GameStates] = {
+            "running_round_prep",
+            "running_work_player_1",
+            "running_work_player_2",
+            "running_work_player_3",
+            "running_work_player_4",
+            "current_player_decision"
+        }
+        self._is_valid_state_for_func(self.STATE.get(), valid_states)
+        # Only option.
+        if self.STATE.get() == "running_round_prep":
             self.STATE.set("running_work_player_1")
-        elif self.STATE.get() == "running_work_player_1":
-            self.STATE.set("running_work_player_2")
-        elif self.STATE.get() == "running_work_player_2":
-            self.STATE.set("running_work_player_3")
-        elif self.STATE.get() == "running_work_player_3":
-            self.STATE.set("running_work_player_4")
+            return
+        # If current player decision, we want to increment so set back to current player.
+        if self.STATE.get() == "current_player_decision":
+            state_val = cast(GameStates, "running_work_player_" + str(self.active_player_id))
+            self.STATE.set(state_val)
+        # Now, do checks if simple increment or loop around.
+        # Last player, loop around.
+        if self.active_player_id == self.__num_players:
+            # TODO: Add check for if player is out of 'person's to place as round is then over.
+            self.STATE.set("running_work_player_1")
+            self.__active_player_id = 1
+        # Otherwise simple increment.
         else:
-            raise StateError("Invalid state change action requested.")
+            state_val = cast(GameStates, "running_work_player_" + str(self.active_player_id+1))
+            self.STATE.set(state_val)
+            self.__active_player_id += 1
 
     def _set_current_player_decision(self) -> None:
         """Sets state to decision mode if current player decision is required."""
@@ -193,8 +210,6 @@ class GameState:
         """Takes in set of normally valid states and returns subset based on num_players."""
         # TODO: Maybe check this logic as more funcs added.
         if self.__num_players == 1:
-            if "running_work_player_1" in valid_states:
-                valid_states.remove("running_work_player_1")
             if "running_work_player_2" in valid_states:
                 valid_states.remove("running_work_player_2")
             if "running_work_player_3" in valid_states:
@@ -202,18 +217,11 @@ class GameState:
             if "running_work_player_4" in valid_states:
                 valid_states.remove("running_work_player_4")
         if self.__num_players == 2:
-            if "running_work_player_2" in valid_states:
-                valid_states.remove("running_work_player_2")
             if "running_work_player_3" in valid_states:
                 valid_states.remove("running_work_player_3")
             if "running_work_player_4" in valid_states:
                 valid_states.remove("running_work_player_4")
         if self.__num_players == 3:
-            if "running_work_player_3" in valid_states:
-                valid_states.remove("running_work_player_3")
-            if "running_work_player_4" in valid_states:
-                valid_states.remove("running_work_player_4")
-        if self.__num_players == 4:
             if "running_work_player_4" in valid_states:
                 valid_states.remove("running_work_player_4")
         return valid_states

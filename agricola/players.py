@@ -569,11 +569,11 @@ class Player:
                 good = space_data["goods_type"]
                 if good is None:
                     raise ValueError("Missing GoodsType at requested get_goods action space.")
-                self.__game.action_spaces._move(
+                self.__supply._move(
                     good, space_data["num_present"],
                     "inventory", (-1,-1), "action_space", source_coord
                 )
-                self.__supply._move(
+                self.__game.action_spaces._move(
                     good, space_data["num_present"],
                     "inventory", (-1,-1), "action_space", source_coord
                 )
