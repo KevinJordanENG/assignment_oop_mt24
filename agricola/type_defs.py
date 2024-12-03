@@ -1,6 +1,7 @@
 """
 Module containing TypeAlias' of common use items throughout agricola pkg.
 """
+
 from typing import Literal
 
 
@@ -29,7 +30,7 @@ GoodsType = Literal[
     "food",
     "fence",
     "stable",
-    "person"
+    "person",
 ]
 """Type alias for various types of goods."""
 
@@ -41,7 +42,7 @@ SpaceType = Literal[
     "action",
     "pasture",
     "unused",
-    "blocked"
+    "blocked",
 ]
 """Type alias for various gameboard space usage types."""
 
@@ -78,7 +79,7 @@ Action = Literal[
     "4_resource_market",
     "3_lessons",
     "4_lessons",
-    "traveling_players"
+    "traveling_players",
 ]
 """Type alias for actions in action spaces, also keys to load properties from CSV."""
 
@@ -92,7 +93,7 @@ MajorImproveNames = Literal[
     "stone_oven",
     "joinery",
     "pottery",
-    "basketmakers_workshop"
+    "basketmakers_workshop",
 ]
 """Type alias for major improvement card names, also keys to load properties from CSV."""
 
@@ -144,7 +145,7 @@ MinorImproveNames = Literal[
     "thick_forest",
     "loam_pit",
     "hard_porcelain",
-    "acorns_basket"
+    "acorns_basket",
 ]
 """Type alias for minor improvement card names, also keys to load properties from CSV."""
 
@@ -196,22 +197,22 @@ OccupationNames = Literal[
     "storehouse_keeper",
     "pastor",
     "sheep_whisperer",
-    "cattle_feeder"
+    "cattle_feeder",
 ]
 """Type alias for occupations card names, also keys to load properties from CSV."""
 
 GameStates = Literal[
-    "not_started", # Access to inspection ops or 'start' ops no mods or init.
-    "stopped_early", # Error on all.
-    "finished", # Access to scoring, inspection, not mods.
-    "running_game", # No access to init or start.
-    "running_round_prep", # Only access to prep func & inspection.
-    "running_round_return_home", # Only access to return home func & inspection.
-    "running_round_harvest", # Only access to harvest func & inspection.
-    "running_work_player_1", # Player turn logic, inspection, player mods.
+    "not_started",  # Access to inspection ops or 'start' ops no mods or init.
+    "stopped_early",  # Error on all.
+    "finished",  # Access to scoring, inspection, not mods.
+    "running_game",  # No access to init or start.
+    "running_round_prep",  # Only access to prep func & inspection.
+    "running_work_player_1",  # Player turn logic, inspection, player mods.
     "running_work_player_2",
     "running_work_player_3",
     "running_work_player_4",
-    "current_player_decision" # If action space/occup/improvement requires a decision from player.
+    "current_player_decision",  # If action space/occup/improvement requires a decision from player.
+    "running_round_return_home",  # Only access to return home func & inspection.
+    "running_round_harvest",  # Only access to harvest func & inspection.
 ]
 """Type alias for all various game states."""

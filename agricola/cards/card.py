@@ -2,11 +2,18 @@
 Module defining ABC 'Card' to be inherited from by 
 'MajorImprovements', 'MinorImprovements', & 'Occupations'.
 """
+
 from __future__ import annotations
 from abc import ABCMeta
 from types import MappingProxyType
 from typing import Any, TYPE_CHECKING, Mapping, Self
-from ..type_defs import MajorImproveNames, MinorImproveNames, OccupationNames, GameStates
+from ..type_defs import (
+    MajorImproveNames,
+    MinorImproveNames,
+    OccupationNames,
+    GameStates,
+)
+
 if TYPE_CHECKING:
     from ..game import Game
 
@@ -30,8 +37,11 @@ class Card(metaclass=ABCMeta):
         """Simple constructor just to set 'Game' as needed & context check."""
         # Dynamic to avoid circular imports, and error if not being built in proper context.
         from .deck import Deck
+
         if not Deck._is_constructing_cards():
-            raise TypeError("Cards can only be instantiated by 'Deck', not directly.")
+            raise TypeError(
+                "Cards can only be instantiated by 'Deck', not directly."
+            )
         self = super().__new__(cls)
         self._game = game
         return self
@@ -60,7 +70,9 @@ class Card(metaclass=ABCMeta):
             "running_work_player_2",
             "running_work_player_3",
             "running_work_player_4",
-            "current_player_decision"
+            "current_player_decision",
         }
-        self._game.state._is_valid_state_for_func(self._game.game_state, valid_states)
+        self._game.state._is_valid_state_for_func(
+            self._game.game_state, valid_states
+        )
         self._played = True

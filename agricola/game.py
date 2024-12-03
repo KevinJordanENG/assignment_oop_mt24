@@ -3,6 +3,7 @@ Main class / API for the agricola game pkg.
 
 Implements the facade pattern allowing full playing of the game through main 'Game' class.
 """
+
 # Standard lib imports.
 from __future__ import annotations
 from contextlib import contextmanager
@@ -12,6 +13,7 @@ from types import MappingProxyType
 from uuid import uuid4
 from typing import ClassVar, Iterator, Mapping, Self, cast, final
 from weakref import WeakValueDictionary
+
 # Relative imports from `agricola` package.
 from .players import Player, Players
 from .gameboards import ActionSpaces, Tiles, MoveRequest
@@ -28,19 +30,26 @@ when installing the game on target machine the 1st time.
 """
 
 
-@final # No subclasses allowed (Optional Agricola expansion packs would just add to Decks' CSVs).
+@final  # No subclasses allowed (Optional Agricola expansion packs would just add to Decks' CSVs).
 class Game:
     """
     Agricola Game API instance class.
     """
 
-    __game_instances: ClassVar[WeakValueDictionary[str, Game]] = WeakValueDictionary()
-    # ^^^^^^^^^^^^^^ --> Flyweight pattern.
+    __game_instances: ClassVar[WeakValueDictionary[str, Game]] = (
+        WeakValueDictionary()
+    ) # ^^^^^^^^^^^^^^ --> Flyweight pattern.
     __is_constructing_state_server: ClassVar[bool] = False  # ⌉
-    __is_constructing_action_spaces: ClassVar[bool] = False # |  Cool pattern of context managers for instantiation
-    __is_constructing_tiles: ClassVar[bool] = False         # |- control borrowed from Dr. Stefano Gogioso's
-    __is_constructing_decks: ClassVar[bool] = False         # |  'marketplace' implementation in OOP-MT2024.
-    __is_constructing_players: ClassVar[bool] = False       # ⌋
+    __is_constructing_action_spaces: ClassVar[bool] = (
+        False  # |  Cool pattern of context managers for instantiation
+    )
+    __is_constructing_tiles: ClassVar[bool] = (
+        False  # |- control borrowed from Dr. Stefano Gogioso's
+    )
+    __is_constructing_decks: ClassVar[bool] = (
+        False  # |  'marketplace' implementation in OOP-MT2024.
+    )
+    __is_constructing_players: ClassVar[bool] = False  # ⌋
 
     @staticmethod
     def _is_constructing_state_server() -> bool:
@@ -149,11 +158,8 @@ class Game:
     __player: Players
 
     def __new__(
-            cls,
-            *,
-            num_players: int,
-            instance_uuid: str = str(uuid4())
-        ) -> Self:
+        cls, *, num_players: int, instance_uuid: str = str(uuid4())
+    ) -> Self:
         """
         Game class constructor.
 
@@ -182,12 +188,18 @@ class Game:
             with Game.__constructing_decks():
                 self.__init_major_imp_cards(path=DATA_DIR_PATH)
                 # Init both full decks of minor impr. & occupation cards.
-                minor_imps_full = self.__init_minor_imp_cards(path=DATA_DIR_PATH)
-                occups_full = self.__init_occup_cards(path=DATA_DIR_PATH, num_players=num_players)
+                minor_imps_full = self.__init_minor_imp_cards(
+                    path=DATA_DIR_PATH
+                )
+                occups_full = self.__init_occup_cards(
+                    path=DATA_DIR_PATH, num_players=num_players
+                )
                 # Init players in proper context. Needs to be within constructing_decks context as creating
                 # players' hands of 7 cards of minor imps. & occupations also calls 'Deck' constructor.
                 with Game.__constructing_players():
-                    self.__player = self.__init_players(num_players, minor_imps_full, occups_full)
+                    self.__player = self.__init_players(
+                        num_players, minor_imps_full, occups_full
+                    )
             # Delete leftovers from these decks as remaining cards not needed after game init.
             del minor_imps_full, occups_full
             # Store instance as otherwise flyweight doesn't work.
@@ -250,7 +262,9 @@ class Game:
         """Public method to start the next round of game play (of 14 total)."""
         # Check game is in valid state.
         valid_states: set[GameStates] = {
-            "running_game", "running_round_return_home", "running_round_harvest"
+            "running_game",
+            "running_round_return_home",
+            "running_round_harvest",
         }
         self.__state._is_valid_state_for_func(self.game_state, valid_states)
         self.__state._start_round(self.__action_spaces, self.__player)
@@ -263,18 +277,18 @@ class Game:
             "running_work_player_1",
             "running_work_player_2",
             "running_work_player_3",
-            "running_work_player_4"
+            "running_work_player_4",
         }
         self.__state._is_valid_state_for_func(self.game_state, valid_states)
         self.__state._play_next_player_actions()
 
     def place_person_on_action_space(
-            self,
-            destination_coord: Coordinate,
-            source_coord: Coordinate,
-            *,
-            player_id: int
-        ) -> None:
+        self,
+        destination_coord: Coordinate,
+        source_coord: Coordinate,
+        *,
+        player_id: int,
+    ) -> None:
         """
         Game public method to place a 'person' on the action spaces board for specified player.
         Method just forwards to game.player.player_id.place_player() via tuple index.
@@ -284,10 +298,10 @@ class Game:
             "running_work_player_1",
             "running_work_player_2",
             "running_work_player_3",
-            "running_work_player_4"
+            "running_work_player_4",
         }
         self.__state._is_valid_state_for_func(self.game_state, valid_states)
-        self.__player.players_tup[player_id-1].place_person_on_action_space(
+        self.__player.players_tup[player_id - 1].place_person_on_action_space(
             destination_coord, source_coord
         )
 
@@ -306,7 +320,7 @@ class Game:
             "running_work_player_2",
             "running_work_player_3",
             "running_work_player_4",
-            "current_player_decision"
+            "current_player_decision",
         }
         self.__state._is_valid_state_for_func(self.game_state, valid_states)
         self.__state._stop()
@@ -318,15 +332,15 @@ class Game:
         raise NotImplementedError()
 
     def bundle_move_request(
-            self,
-            *,
-            goods_type: str,
-            num_goods: int,
-            destination_board: str,
-            destination_coord: tuple[int,int],
-            source_board: str,
-            source_coord: tuple[int,int]
-        ) -> MoveRequest:
+        self,
+        *,
+        goods_type: str,
+        num_goods: int,
+        destination_board: str,
+        destination_coord: tuple[int, int],
+        source_board: str,
+        source_coord: tuple[int, int],
+    ) -> MoveRequest:
         """Helper function that bundles/casts to TypedDict needed for requesting item moves."""
         # Helper func so valid in any state as no modification to game data.
         move_request: MoveRequest = {
@@ -335,10 +349,10 @@ class Game:
             "destination_board": cast(Location, destination_board),
             "destination_coord": cast(Coordinate, destination_coord),
             "source_board": cast(Location, source_board),
-            "source_coord": cast(Coordinate, source_coord)
+            "source_coord": cast(Coordinate, source_coord),
         }
         return move_request
-    
+
     def _move_item(self, move_request: MoveRequest, *, player_id: int) -> None:
         """Unified move routine from 'game' directly that changes all necessary data."""
         # Check game is in valid state.
@@ -351,10 +365,10 @@ class Game:
             "running_work_player_4",
             "current_player_decision",
             "running_round_return_home",
-            "running_round_harvest"
+            "running_round_harvest",
         }
         self.__state._is_valid_state_for_func(self.game_state, valid_states)
-        self.__player.players_tup[player_id-1]._move_items(move_request)
+        self.__player.players_tup[player_id - 1]._move_items(move_request)
 
     def __init_action_spaces(self, num_players: int, *, path: str) -> None:
         """Sets up the action spaces board depending on number of players."""
@@ -373,10 +387,12 @@ class Game:
         self.__tiles = {}
         # Make sure we know they really are SpaceTypes.
         wf: tuple[SpaceType, SpaceType] = (
-            cast(SpaceType, "wood_room"), cast(SpaceType, "field")
+            cast(SpaceType, "wood_room"),
+            cast(SpaceType, "field"),
         )
         cs: tuple[SpaceType, SpaceType] = (
-            cast(SpaceType, "clay_room"), cast(SpaceType, "stone_room")
+            cast(SpaceType, "clay_room"),
+            cast(SpaceType, "stone_room"),
         )
         # Initialize / add to game store.
         self.__tiles[wf] = Tiles(wf)
@@ -406,7 +422,9 @@ class Game:
         # Build & return.
         return Deck(self, "occupation", path=path, num_players=num_players)
 
-    def __init_players(self, num_players: int, minor: Deck, occup: Deck) -> Players:
+    def __init_players(
+        self, num_players: int, minor: Deck, occup: Deck
+    ) -> Players:
         """Creates player instances for the game."""
         # Check game is in valid state.
         valid_states: set[GameStates] = {"not_started"}
@@ -426,8 +444,8 @@ class Game:
                     set_of_seven_minor,
                     set_of_seven_occup,
                     num_players,
-                    player_id=player+1,
-                    starting=(player+1 == rnd)
+                    player_id=player + 1,
+                    starting=(player + 1 == rnd),
                 )
             )
         # Use list of player to init Players class (cast to tuple when passing in).

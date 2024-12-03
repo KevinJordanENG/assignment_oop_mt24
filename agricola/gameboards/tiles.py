@@ -5,6 +5,7 @@ Tiles are special as when you use one side you also remove the other side
 from the global inventory. Example: you Plow and place 1 field tile,
 but when you do this the number of possible wood rooms left to build also decrements.
 """
+
 from typing import Self
 from ..type_defs import SpaceType
 
@@ -22,8 +23,11 @@ class Tiles:
         """Constructor for tiles with error checking for proper context (Game only caller)."""
         # Dynamic to avoid circular imports, and error if not being built in proper context.
         from ..game import Game
+
         if not Game._is_constructing_tiles():
-            raise TypeError("Tiles can only be instantiated by 'Game', not directly.")
+            raise TypeError(
+                "Tiles can only be instantiated by 'Game', not directly."
+            )
         self = super().__new__(cls)
         self.__init_and_check_pair(type_pair)
         return self
@@ -38,7 +42,9 @@ class Tiles:
         """Returns the number of the specific pair type of the tile available."""
         return self.__tiles_avail
 
-    def __init_and_check_pair(self, type_pair: tuple[SpaceType, SpaceType]) -> None:
+    def __init_and_check_pair(
+        self, type_pair: tuple[SpaceType, SpaceType]
+    ) -> None:
         """Initializes & error checks for bad pair."""
         if type_pair == ("wood_room", "field"):
             self.__tiles_avail = 23

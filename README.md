@@ -12,15 +12,14 @@ This file contains listed and described features of the implementation such as a
     - `Players` is a composition of up to 4 `Player` objects allowing "dot"/written access to each player object.
     - `Player` object composes `Supply`, `Farmyard`, & `Deck`s supporting "Player" scope control of game actions.
     - `Game` object composes `GameState`, `ActionSpaces`, `Tiles`, `Deck`, & `Players` supporting "Game" scope control of actions.
-3. Generics - TODO, revisit what counts here...
-4. Structural Types - Used in numerous places such as:
+3. Structural Types - Used in numerous places such as:
     - TypedDicts - used to define lightweight/fixed data packets such as `Good` (with `NotRequired` args), `PerimeterData`, `MoveRequest`, & `SpaceData`.
     - Iterator - used in context manager based object instantiation control.
-5. Type Aliases - These were used heavily such as:
+4. Type Aliases - These were used heavily such as:
     - used to define sets of valid string literals (globally useful ones in `type_defs.py`) via `Literal["a", "b", ..., "z"]`.
     - tuples such as `Coordinate` for [row][col] access.
     - sets (including `Final[]`) such as `START_COORDS` & `FuncNoEval` for specific membership structuring & parsing.
-6. Others - Various other machinery used that seems to be type features that were used are listed below.
+5. Others - Various other machinery used that seems to be type features that were used are listed below.
     - `ContextVar`s - used to maintain game state globally (within `GameState`) via verified setters/getters.
     - `ClassVar`s - used for flyweight pattern for instance cache & context manager based instantiation control.
     - `MappingProxyType` - used to return read only view of objects' data via `@property`s.

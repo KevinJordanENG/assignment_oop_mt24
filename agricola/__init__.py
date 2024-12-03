@@ -1,6 +1,7 @@
 """
 Entry point for the agricola game pkg.
 """
+
 from __future__ import annotations
 from .game import Game
 from .state_server import StateError

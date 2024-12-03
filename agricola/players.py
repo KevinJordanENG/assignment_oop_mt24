@@ -1,6 +1,7 @@
 """
 Module containing Player class for controlling agricola game players.
 """
+
 from __future__ import annotations
 from contextlib import contextmanager
 from typing import ClassVar, Iterator, Self, TYPE_CHECKING, cast
@@ -15,8 +16,9 @@ from .type_defs import (
     MinorImproveNames,
     OccupationNames,
     MajorImproveNames,
-    GameStates
+    GameStates,
 )
+
 if TYPE_CHECKING:
     from .game import Game
 
@@ -28,9 +30,13 @@ class Player:
     Maintains control for "player" scope actions such as developing farmyard, deciding on actions, etc.
     """
 
-    __is_constructing_supply: ClassVar[bool] = False   # ⌉  Cool pattern of context managers for instantiation
-    __is_constructing_farmyard: ClassVar[bool] = False # ⌋- control borrowed from Dr. Stefano Gogioso's
-                                                       #    'marketplace' implementation in OOP-MT2024.
+    __is_constructing_supply: ClassVar[bool] = (
+        False  # ⌉  Cool pattern of context managers for instantiation
+    )
+    __is_constructing_farmyard: ClassVar[bool] = (
+        False  # ⌋- control borrowed from Dr. Stefano Gogioso's
+    )
+    #    'marketplace' implementation in OOP-MT2024.
 
     @staticmethod
     def _is_constructing_supply() -> bool:
@@ -80,28 +86,35 @@ class Player:
     __has_future_goods_on_action_spaces: bool
     __future_goods: list[tuple[int, GoodsType]]
                              # ^^^ round_num
-    __decision_func_cache: str # str version of func to be executed.
-    __decision_args_cache: list[str] # List of types of args required for cached decision func.
-    __pending_payment: tuple[tuple[int,str], ...] # Sometimes required when decision chains present.
+    __decision_func_cache: str  # str version of func to be executed.
+    __decision_args_cache: list[
+        str
+    ]  # List of types of args required for cached decision func.
+    __pending_payment: tuple[
+        tuple[int, str], ...
+    ]  # Sometimes required when decision chains present.
 
     def __new__(
-            cls,
-            game: Game,
-            minor_imp_cards: Deck,
-            occup_cards: Deck,
-            num_players: int,
-            *,
-            player_id: int,
-            starting: bool = False
-        ) -> Self:
+        cls,
+        game: Game,
+        minor_imp_cards: Deck,
+        occup_cards: Deck,
+        num_players: int,
+        *,
+        player_id: int,
+        starting: bool = False,
+    ) -> Self:
         """
         Constructor for Player object, an important sub-object for the agricola API.
         Uses context manager checks from Game to ensure not constructed directly.
         """
         # Dynamic to avoid circular imports, and error if not being built in proper context.
         from .game import Game
+
         if not Game._is_constructing_players():
-            raise TypeError("Player can only be instantiated by 'Game', not directly.")
+            raise TypeError(
+                "Player can only be instantiated by 'Game', not directly."
+            )
         self = super().__new__(cls)
         self.__game = game
         self.__player_id = player_id
@@ -129,9 +142,9 @@ class Player:
         return self
 
     @property
-    def game(self) -> str:
+    def game(self) -> Game:
         """Returns the game instance that the player is a part of."""
-        return self.__game.instance_uuid
+        return self.__game
 
     @property
     def player_id(self) -> int:
@@ -152,7 +165,7 @@ class Player:
     def waiting_decision_function(self) -> str:
         """
         Returns the 'str' function call that is waiting to be executed.
-        
+
         NOTE: It is not expected that the function be invoked directly as this pattern
         will require manual cache cleanup. This is only meant to be the reference
         of what function the proper call to 'decision()' will be invoked.
@@ -208,30 +221,49 @@ class Player:
         raise NotImplementedError()
 
     def place_person_on_action_space(
-            self,
-            destination_coord: Coordinate,
-            source_coord: Coordinate
-        ) -> None:
+        self, destination_coord: Coordinate, source_coord: Coordinate
+    ) -> None:
         """Player public method to place a 'person' on the action spaces board."""
         # Check game is in valid state.
         valid_states: set[GameStates] = {
             "running_work_player_1",
             "running_work_player_2",
             "running_work_player_3",
-            "running_work_player_4"
+            "running_work_player_4",
         }
-        self.__game.state._is_valid_state_for_func(self.__game.game_state, valid_states)
+        self.__game.state._is_valid_state_for_func(
+            self.__game.game_state, valid_states
+        )
         # Early reject if space occupied.
         if destination_coord not in self.__game.action_spaces.open_spaces:
             raise ValueError("Coordinate is already occupied.")
+        # Early reject if no more 'person's left to place.
+        self.__check_if_persons_still_to_move()
         # Move as needed.
         self.__farmyard._move(
-            "person", 1, "action_space", destination_coord, "farmyard", source_coord
+            "person",
+            1,
+            "action_space",
+            destination_coord,
+            "farmyard",
+            source_coord,
         )
         self.__game.action_spaces._move(
-            "person", 1, "action_space", destination_coord, "farmyard", source_coord
+            "person",
+            1,
+            "action_space",
+            destination_coord,
+            "farmyard",
+            source_coord,
         )
-        self.__supply._move("person", 1, "action_space", destination_coord, "farmyard", source_coord)
+        self.__supply._move(
+            "person",
+            1,
+            "action_space",
+            destination_coord,
+            "farmyard",
+            source_coord,
+        )
         # Get action & function associated.
         action_key = self.__game.action_spaces.get_action(destination_coord)
         if action_key is None:
@@ -244,24 +276,31 @@ class Player:
         # the large number of unique actions tractable for this game in shorter development time.
         # Evaluate action space function.
         decision = eval(str_func)
+        # If we don't error by the time we reach this, means we have successfully placed 'person'.
+        # Decrement number of people left for this player, then set state below.
+        self.__game.state._update_persons_left(remove=True)
         # Set state depending if player decision required.
         if decision:
             self.__game.state._set_current_player_decision()
         else:
-            self.__game.state._play_next_player_actions()
+            self.__game.state._play_next_player_actions(self.__game.player)
 
     def choose_room_or_stable(self, room_or_stable: str) -> bool:
         """Takes choice of room or stable and furthers decision logic for 'farm_expansion'."""
         # Check game is in valid state.
         valid_states: set[GameStates] = {"current_player_decision"}
-        self.__game.state._is_valid_state_for_func(self.__game.game_state, valid_states)
+        self.__game.state._is_valid_state_for_func(
+            self.__game.game_state, valid_states
+        )
         # Check valid input.
         if room_or_stable not in {"room", "stable"}:
-            raise ValueError("Invalid choice, must be either 'room' or 'stable'.")
+            raise ValueError(
+                "Invalid choice, must be either 'room' or 'stable'."
+            )
         if room_or_stable == "room":
             room_or_stable = self.__farmyard.get_house_type()
         # We're for sure using 'farm_expansion'.
-        costs = self.__game.action_spaces.get_action_func_cost('farm_expansion')
+        costs = self.__game.action_spaces.get_action_func_cost("farm_expansion")
         cost_of_interest = costs[room_or_stable]
         if room_or_stable == "stable":
             count = self.__supply.count(cost_of_interest[0][1])
@@ -272,7 +311,10 @@ class Player:
             # For sure some type of room.
             count_1 = self.__supply.count(cost_of_interest[0][1])
             count_2 = self.__supply.count(cost_of_interest[1][1])
-            if count_1 < cost_of_interest[0][0] or count_2 < cost_of_interest[1][0]:
+            if (
+                count_1 < cost_of_interest[0][0]
+                or count_2 < cost_of_interest[1][0]
+            ):
                 raise ValueError("Not enough resources for requested build.")
             self.__pending_payment = cost_of_interest
         # All checks passed, now choose space to build.
@@ -282,24 +324,28 @@ class Player:
         return True
 
     def choose_space(
-            self,
-            requested_space_type: SpaceType,
-            destination_coord: Coordinate
-            ) -> bool:
+        self, requested_space_type: SpaceType, destination_coord: Coordinate
+    ) -> bool:
         """Chooses space to try to accomplish action."""
         # Check game is in valid state.
         valid_states: set[GameStates] = {"current_player_decision"}
-        self.__game.state._is_valid_state_for_func(self.__game.game_state, valid_states)
+        self.__game.state._is_valid_state_for_func(
+            self.__game.game_state, valid_states
+        )
         # Check if valid space type.
-        if not self.__farmyard.check_space_change_validity(requested_space_type, destination_coord):
+        if not self.__farmyard.check_space_change_validity(
+            requested_space_type, destination_coord
+        ):
             # If no --> end decision, raise error.
             raise ValueError("Not valid space request.")
         # Passed checks, change space type.
-        self.__farmyard._change_space_type(requested_space_type, destination_coord)
+        self.__farmyard._change_space_type(
+            requested_space_type, destination_coord
+        )
         # Pay for it (if it costs anything)!
         if len(self.__pending_payment) > 0:
             self.__supply._pay(self.__pending_payment)
-        self.__pending_payment = () # Assign empty tuple (payment no longer pending).
+        self.__pending_payment = ()  # Assign empty tuple (payment no longer pending).
         return False
 
     def play_minor_improvement(self, minor_imp: MinorImproveNames) -> bool:
@@ -310,16 +356,22 @@ class Player:
         """
         # Check game is in valid state.
         valid_states: set[GameStates] = {"current_player_decision"}
-        self.__game.state._is_valid_state_for_func(self.__game.game_state, valid_states)
+        self.__game.state._is_valid_state_for_func(
+            self.__game.game_state, valid_states
+        )
         # Check if card is present in hand.
         if not self.__minor_imp_cards.is_in_deck(minor_imp):
-            raise ValueError("Card requested to be played not found in this player's hand.")
+            raise ValueError(
+                "Card requested to be played not found in this player's hand."
+            )
         # If present, get prereqs if any.
         prereqs = self.__minor_imp_cards.get_prereqs_minor_imp(minor_imp)
         if prereqs is not None:
             # Check prereqs if present.
             if not self.minor_imp_prereq_check(minor_imp):
-                raise ValueError("Prerequisites for playing selected card not met.")
+                raise ValueError(
+                    "Prerequisites for playing selected card not met."
+                )
         # Get cost to play.
         build_cost = self.__minor_imp_cards.get_build_cost(minor_imp)
         # Check if we can pay for it.
@@ -334,10 +386,12 @@ class Player:
         # If no func return F -> decision will cleanup.
         if card_func is None:
             return False
-        decision = eval(card_func) # Otherwise eval card func.
+        decision = eval(card_func)  # Otherwise eval card func.
         # If we've gotten to the point of card func eval, the card IS played so do pass_left.
         if self.__minor_imp_cards.cards[minor_imp].attributes["pass_left"]:
-            self.__game.player._pass_minor_imp_card_left(self.__game, self.player_id, minor_imp)
+            self.__game.player._pass_minor_imp_card_left(
+                self.__game, self.player_id, minor_imp
+            )
         # If func that doesn't require decision, execute & return F -> decision cleanup.
         # If func that req dec, exec, return T to decision (assumes caches set by card func).
         if decision:
@@ -348,7 +402,9 @@ class Player:
         """Checks players items/status to confirm has needed prereqs."""
         # Check game is in valid state.
         valid_states: set[GameStates] = {"current_player_decision"}
-        self.__game.state._is_valid_state_for_func(self.__game.game_state, valid_states)
+        self.__game.state._is_valid_state_for_func(
+            self.__game.game_state, valid_states
+        )
         # TODO: plz build! currently just pass-through of True assumes prereqs are met.
         return True
 
@@ -360,10 +416,14 @@ class Player:
         """
         # Check game is in valid state.
         valid_states: set[GameStates] = {"current_player_decision"}
-        self.__game.state._is_valid_state_for_func(self.__game.game_state, valid_states)
+        self.__game.state._is_valid_state_for_func(
+            self.__game.game_state, valid_states
+        )
         # Check if card is present in hand.
         if not self.__occupation_cards.is_in_deck(occup):
-            raise ValueError("Card requested to be played not found in this player's hand.")
+            raise ValueError(
+                "Card requested to be played not found in this player's hand."
+            )
         # Checks passed, play card & get its func.
         card_func = self.__occupation_cards._play_card(occup)
         # If no func return F -> decision will cleanup.
@@ -385,7 +445,9 @@ class Player:
         """
         # Check game is in valid state.
         valid_states: set[GameStates] = {"current_player_decision"}
-        self.__game.state._is_valid_state_for_func(self.__game.game_state, valid_states)
+        self.__game.state._is_valid_state_for_func(
+            self.__game.game_state, valid_states
+        )
         # Check if card is available in game still.
         if not self.__game.major_imp_cards.is_in_deck(major_imp):
             raise ValueError("Card requested not available.")
@@ -394,7 +456,9 @@ class Player:
         # If we requested the cooking hearths, this prompts another decision so kick out & handle.
         if major_imp in {"4_cooking_hearth", "5_cooking_hearth"}:
             self.__pending_payment = build_cost
-            self.__decision_func_cache = "return_fireplace_or_buy_hearth(buy_or_return='{}')"
+            self.__decision_func_cache = (
+                "return_fireplace_or_buy_hearth(buy_or_return='{}')"
+            )
             self.__decision_args_cache = ["arg0: buy OR return"]
             return True
         # Check if we can pay for it.
@@ -405,17 +469,19 @@ class Player:
             # Pay build cost.
             self.__supply._pay(build_cost)
         # FIXME! left off here.
-        #return True
+        # return True
         raise NotImplementedError()
 
     def return_fireplace_or_buy_hearth(self, buy_or_return: str) -> bool:
         """
-        Sub-decision when playing a major imp. to 
+        Sub-decision when playing a major imp. to
         either return a held fireplace OR just buy the hearth.
         """
         # Check game is in valid state.
         valid_states: set[GameStates] = {"current_player_decision"}
-        self.__game.state._is_valid_state_for_func(self.__game.game_state, valid_states)
+        self.__game.state._is_valid_state_for_func(
+            self.__game.game_state, valid_states
+        )
         # If return-fireplace.
         # Check that we have one to return.
         # If not, raise error.
@@ -432,14 +498,16 @@ class Player:
             self.__supply._pay(self.__pending_payment)
             self.__pending_payment = ()
         # FIXME! left off here.
-        #return False
+        # return False
         raise NotImplementedError()
 
     def choose_action_function(self, chosen_func: str) -> bool:
         """Takes the function chosen and loads it in cache."""
         # Check game is in valid state.
         valid_states: set[GameStates] = {"current_player_decision"}
-        self.__game.state._is_valid_state_for_func(self.__game.game_state, valid_states)
+        self.__game.state._is_valid_state_for_func(
+            self.__game.game_state, valid_states
+        )
         self.__decision_func_cache = chosen_func
         # Need a medium if else tree to match chosen func to args.
         # Limited number of times functions are chosen between, so ugly/unscalable but works.
@@ -449,20 +517,21 @@ class Player:
         # Major imp.
         elif "play_major_improvement" in chosen_func:
             self.__decision_args_cache = ["arg0: MajorImproveNames"]
-        # TODO: finish list.
         # Sow.
         # Bake bread.
         # Get goods.
         # Get animal.
         # Cook.
-        #return True
-        raise NotImplementedError()
+        # TODO: finish list, errors if unknown or missing option.
+        else:
+            raise NotImplementedError()
+        return True
 
     def decision_cleanup(self, end_turn: bool) -> None:
         """
         WARNING: This method & pattern of direct invocation of decisions
         should be avoided in favor of automatic actions via 'decision().'
-        
+
         When invoking decision logic as intended with 'decision()', cleanup is automatic.
         If user manually invokes functions, the decision caches will not be automatically cleared
         and calling of this func will be required. This is discouraged.
@@ -473,12 +542,12 @@ class Player:
         self.__pending_payment = ()
         if end_turn:
             # If player ends turn, set state to next player.
-            self.__game.state._play_next_player_actions()
-    
+            self.__game.state._play_next_player_actions(self.__game.player)
+
     def decision(self, decision_args: list[str]) -> None:
         """
         Function to make a decision based on possible options from game effects.
-        
+
         If func eval'd in decision has no further/chained decisions, decision() will cleanup state.
         If there is a subsequent decision, the eval'd func will update the decision caches.
         NOTE: decision() expects all args in list to be of type 'str'.
@@ -487,7 +556,9 @@ class Player:
         """
         # Check game is in valid state.
         valid_states: set[GameStates] = {"current_player_decision"}
-        self.__game.state._is_valid_state_for_func(self.__game.game_state, valid_states)
+        self.__game.state._is_valid_state_for_func(
+            self.__game.game_state, valid_states
+        )
         # Check if public vs protected method and add '_' as needed.
         self.__public_vs_protected_func_decision_prep()
         # Smoosh self. onto str so it properly executes.
@@ -504,7 +575,7 @@ class Player:
             self.__decision_func_cache = ""
             self.__decision_args_cache = []
             # If no more decisions set state to next player.
-            self.__game.state._play_next_player_actions()
+            self.__game.state._play_next_player_actions(self.__game.player)
         # If more decisions, the functions will have set the func & args caches,
         # so no further action.
 
@@ -520,21 +591,25 @@ class Player:
             "running_work_player_4",
             "current_player_decision",
             "running_round_return_home",
-            "running_round_harvest"
+            "running_round_harvest",
         }
-        self.__game.state._is_valid_state_for_func(self.__game.game_state, valid_states)
+        self.__game.state._is_valid_state_for_func(
+            self.__game.game_state, valid_states
+        )
         # Move items.
+        self.__supply._move(**move_request)
         self.__farmyard._move(**move_request)
         self.__game.action_spaces._move(**move_request)
-        self.__supply._move(**move_request)
-                          # ^^ Advanced Language Feature: Dict Unpacking - Blasts various num args of move_request
-                          #    to _move() function without need to explicitly name them.
+        # ^^ Advanced Language Feature: Dict Unpacking - Blasts various num args
+        # of move_request to _move() function without need to explicitly name them.
 
     def _get_goods_from_future_action_spaces(self, round_num: int) -> None:
         """If player has items on future action spaces, this add them to player's inventory."""
         # Check game is in valid state.
         valid_states: set[GameStates] = {"running_round_prep"}
-        self.__game.state._is_valid_state_for_func(self.__game.game_state, valid_states)
+        self.__game.state._is_valid_state_for_func(
+            self.__game.game_state, valid_states
+        )
         # Get future goods if present.
         if self.__has_future_goods_on_action_spaces:
             for future_good in self.__future_goods:
@@ -543,7 +618,7 @@ class Player:
                         {
                             "goods_type": future_good[1],
                             "location": "inventory",
-                            "coordinate": (-1,-1)
+                            "coordinate": (-1, -1),
                         }
                     )
 
@@ -555,40 +630,60 @@ class Player:
             "running_work_player_2",
             "running_work_player_3",
             "running_work_player_4",
-            "current_player_decision"
+            "current_player_decision",
         }
-        self.__game.state._is_valid_state_for_func(self.__game.game_state, valid_states)
+        self.__game.state._is_valid_state_for_func(
+            self.__game.game_state, valid_states
+        )
         # Action space variants. Accum only valid here.
         if action is not None:
             space = self.__game.action_spaces.get_space_data_from_action(action)
             if space is None:
-                raise ValueError("Did not find action space on board. Maybe not yet in play.")
+                raise ValueError(
+                    "Did not find action space on board. Maybe not yet in play."
+                )
             source_coord, space_data = space[0], space[1]
             # Accum spaces.
             if space_data["accumulate"]:
                 good = space_data["goods_type"]
                 if good is None:
-                    raise ValueError("Missing GoodsType at requested get_goods action space.")
+                    raise ValueError(
+                        "Missing GoodsType at requested get_goods action space."
+                    )
                 self.__supply._move(
-                    good, space_data["num_present"],
-                    "inventory", (-1,-1), "action_space", source_coord
+                    good,
+                    space_data["num_present"],
+                    "inventory",
+                    (-1, -1),
+                    "action_space",
+                    source_coord,
                 )
                 self.__game.action_spaces._move(
-                    good, space_data["num_present"],
-                    "inventory", (-1,-1), "action_space", source_coord
+                    good,
+                    space_data["num_present"],
+                    "inventory",
+                    (-1, -1),
+                    "action_space",
+                    source_coord,
                 )
-                return False # No further decision needed.
+                return False  # No further decision needed.
             # Non-accum spaces.
             if not space_data["accumulate"]:
-                output = self.__game.action_spaces.get_action_func_output(action)
+                output = self.__game.action_spaces.get_action_func_output(
+                    action
+                )
                 for _ in range(output[0]):
                     self.__supply._add(
-                        {"goods_type": output[1], "location": "inventory", "coordinate": (-1,-1)}
+                        {
+                            "goods_type": output[1],
+                            "location": "inventory",
+                            "coordinate": (-1, -1),
+                        }
                     )
-                return False # No further decision needed.
+                return False  # No further decision needed.
         # Getting from general inventory.
         elif action is None:
-        # TODO: Build this logic for minor imp. & occup calls to get_goods().
+            # TODO: Build this logic for minor imp. & occup calls to get_goods(), currently pass through.
             pass
         return False
 
@@ -599,9 +694,11 @@ class Player:
             "running_work_player_1",
             "running_work_player_2",
             "running_work_player_3",
-            "running_work_player_4"
+            "running_work_player_4",
         }
-        self.__game.state._is_valid_state_for_func(self.__game.game_state, valid_states)
+        self.__game.state._is_valid_state_for_func(
+            self.__game.game_state, valid_states
+        )
         # Set decision caches.
         self.__decision_func_cache = "choose_room_or_stable('{}')"
         self.__decision_args_cache = ["arg0: room OR stable"]
@@ -614,9 +711,11 @@ class Player:
             "running_work_player_1",
             "running_work_player_2",
             "running_work_player_3",
-            "running_work_player_4"
+            "running_work_player_4",
         }
-        self.__game.state._is_valid_state_for_func(self.__game.game_state, valid_states)
+        self.__game.state._is_valid_state_for_func(
+            self.__game.game_state, valid_states
+        )
         # Set current player as start if not already.
         if self.__starting_player:
             pass
@@ -638,9 +737,11 @@ class Player:
             "running_work_player_1",
             "running_work_player_2",
             "running_work_player_3",
-            "running_work_player_4"
+            "running_work_player_4",
         }
-        self.__game.state._is_valid_state_for_func(self.__game.game_state, valid_states)
+        self.__game.state._is_valid_state_for_func(
+            self.__game.game_state, valid_states
+        )
         self.__starting_player = False
 
     def _plow(self) -> bool:
@@ -650,10 +751,14 @@ class Player:
             "running_work_player_1",
             "running_work_player_2",
             "running_work_player_3",
-            "running_work_player_4"
+            "running_work_player_4",
         }
-        self.__game.state._is_valid_state_for_func(self.__game.game_state, valid_states)
-        string = "choose_space(requested_space_type='field', destination_coord={})"
+        self.__game.state._is_valid_state_for_func(
+            self.__game.game_state, valid_states
+        )
+        string = (
+            "choose_space(requested_space_type='field', destination_coord={})"
+        )
         self.__decision_func_cache = string
         self.__decision_args_cache = ["arg0: Coordinate"]
         return True
@@ -665,23 +770,25 @@ class Player:
             "running_work_player_1",
             "running_work_player_2",
             "running_work_player_3",
-            "running_work_player_4"
+            "running_work_player_4",
         }
-        self.__game.state._is_valid_state_for_func(self.__game.game_state, valid_states)
+        self.__game.state._is_valid_state_for_func(
+            self.__game.game_state, valid_states
+        )
         # Get costs for different lessons spaces based on space & num already played.
         count = self.__occupation_cards.count_num_played()
         if action == "lessons":
-            costs = self.__game.action_spaces.get_action_func_cost('lessons')
+            costs = self.__game.action_spaces.get_action_func_cost("lessons")
             # Decide which cost item to use.
             if count == 0:
                 cost = costs["first"]
             else:
                 cost = costs["second"]
         elif action == "3_lessons":
-            costs = self.__game.action_spaces.get_action_func_cost('3_lessons')
+            costs = self.__game.action_spaces.get_action_func_cost("3_lessons")
             cost = costs["all"]
         elif action == "4_lessons":
-            costs = self.__game.action_spaces.get_action_func_cost('4_lessons')
+            costs = self.__game.action_spaces.get_action_func_cost("4_lessons")
             # Decide which cost item to use.
             if count < 2:
                 cost = costs["one_and_two"]
@@ -707,9 +814,11 @@ class Player:
             "running_work_player_1",
             "running_work_player_2",
             "running_work_player_3",
-            "running_work_player_4"
+            "running_work_player_4",
         }
-        self.__game.state._is_valid_state_for_func(self.__game.game_state, valid_states)
+        self.__game.state._is_valid_state_for_func(
+            self.__game.game_state, valid_states
+        )
         # Set cache & args.
         self.__decision_func_cache = "choose_action_function(chosen_func='{}')"
         self.__decision_args_cache = ["arg0: " + func_1 + " OR " + func_2]
@@ -718,7 +827,7 @@ class Player:
     def __public_vs_protected_func_decision_prep(self) -> None:
         """
         For decisions, some funcs are public, others are protected depending on allowed user/internal execution patterns.
-        
+
         This private method determines which and preps func str appropriately.
         """
         pub_funcs = {
@@ -728,7 +837,7 @@ class Player:
             "play_occupation",
             "play_major_improvement",
             "return_fireplace_or_buy_hearth",
-            "choose_action_function"
+            "choose_action_function",
         }
         # If found in pub funcs return without appending "_".
         for func in pub_funcs:
@@ -736,8 +845,8 @@ class Player:
                 return
         # If not found, append "_".
         self.__decision_func_cache = "_" + self.__decision_func_cache
-    
-    def __check_inventory(self, cost: tuple[tuple[int,str], ...]) -> bool:
+
+    def __check_inventory(self, cost: tuple[tuple[int, str], ...]) -> bool:
         """Check function verifying player has all items to pay for given cost."""
         flag = True
         for item in cost:
@@ -747,21 +856,33 @@ class Player:
                 return False
         return flag
 
-    def __check_if_persons_still_to_move(self) -> bool:
+    def __check_if_persons_still_to_move(self) -> None:
         """Checks if player has any more 'person' pieces to place."""
-        raise NotImplementedError()
+        person_data = self.__supply._count_person()
+        for i in range(person_data[0]):
+            if person_data[1][i] == "farmyard":
+                return
+        raise ValueError("No 'person' left to place.")
 
     def __init_persons(self) -> None:
         """Move a person piece from one coordinate & board to another."""
-        self.__farmyard._move("person", 1, "farmyard", (1,0), "inventory", (-1,-1))
-        self.__farmyard._move("person", 1, "farmyard", (2,0), "inventory", (-1,-1))
-        self.__supply._move("person", 1, "farmyard", (1,0), "inventory", (-1,-1))
-        self.__supply._move("person", 1, "farmyard", (2,0), "inventory", (-1,-1))
+        self.__farmyard._move(
+            "person", 1, "farmyard", (1, 0), "inventory", (-1, -1)
+        )
+        self.__farmyard._move(
+            "person", 1, "farmyard", (2, 0), "inventory", (-1, -1)
+        )
+        self.__supply._move(
+            "person", 1, "farmyard", (1, 0), "inventory", (-1, -1)
+        )
+        self.__supply._move(
+            "person", 1, "farmyard", (2, 0), "inventory", (-1, -1)
+        )
 
 
 class Players:
     """
-    Combination/convenience class that unifies all 4 possible players 
+    Combination/convenience class that unifies all 4 possible players
     for easy '.' access to player methods as well as iterable collection.
     """
 
@@ -776,8 +897,11 @@ class Players:
         """Constructor for unified combination class of individual players allowing easy 'dot' access."""
         # Dynamic to avoid circular imports, and error if not being built in proper context.
         from .game import Game
+
         if not Game._is_constructing_players():
-            raise TypeError("Players can only be instantiated by 'Game', not directly.")
+            raise TypeError(
+                "Players can only be instantiated by 'Game', not directly."
+            )
         self = super().__new__(cls)
         self.__players_tup = players_tup
         self.__num_players = len(players_tup)
@@ -828,11 +952,8 @@ class Players:
         return self.__players_tup
 
     def _pass_minor_imp_card_left(
-            self,
-            game: Game,
-            current_player_id: int,
-            minor_imp: MinorImproveNames
-            ) -> None:
+        self, game: Game, current_player_id: int, minor_imp: MinorImproveNames
+    ) -> None:
         """Moves the card to the left (player_id++) hand."""
         # Check game is in valid state.
         valid_states: set[GameStates] = {"current_player_decision"}
@@ -843,11 +964,15 @@ class Players:
         if current_player_id == self.__num_players:
             # Next player is actually player 1.
             # Remove from current player.
-            card = self.__players_tup[current_player_id-1].minor_improvements._pop(minor_imp)
+            card = self.__players_tup[
+                current_player_id - 1
+            ].minor_improvements._pop(minor_imp)
             self.__one.minor_improvements._add_card_to_deck(minor_imp, card)
         else:
             # Increment player_id.
-            card = self.__players_tup[current_player_id-1].minor_improvements._pop(minor_imp)
-            self.__players_tup[current_player_id].minor_improvements._add_card_to_deck(
-                minor_imp, card
-            )
+            card = self.__players_tup[
+                current_player_id - 1
+            ].minor_improvements._pop(minor_imp)
+            self.__players_tup[
+                current_player_id
+            ].minor_improvements._add_card_to_deck(minor_imp, card)
